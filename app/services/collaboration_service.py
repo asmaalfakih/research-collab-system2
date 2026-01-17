@@ -60,7 +60,7 @@ class CollaborationService:
             if not project_data:
                 return False, "Project not found"
 
-        count = neo4j.create_supervision(supervisor_id, student_id)
+        count = neo4j.create_supervision(supervisor_id, student_id, project_id)
 
         if count == 0:
             return False, "Failed to record supervision"
@@ -564,128 +564,72 @@ class CollaborationService:
     def delete_relationship(relationship_type: str, relationship_data: Dict[str, Any], deleter_id: str) -> Tuple[
         bool, str]:
         try:
+            success = False
+            message = ""
+
             if relationship_type == 'CO_AUTHORED_WITH':
                 if 'researcher1_id' in relationship_data and 'researcher2_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (r1:Researcher {id: $id1})-[rel:CO_AUTHORED_WITH]-(r2:Researcher {id: $id2})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, id1=relationship_data['researcher1_id'], id2=relationship_data['researcher2_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Coauthorship relationship deleted"
+                    success = neo4j.delete_coauthorship(
+                        relationship_data['researcher1_id'],
+                        relationship_data['researcher2_id']
+                    )
+                    message = "Coauthorship relationship deleted"
 
             elif relationship_type == 'SUPERVISED':
                 if 'supervisor_id' in relationship_data and 'student_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (supervisor:Researcher {id: $supervisor_id})-[rel:SUPERVISED]->(student:Researcher {id: $student_id})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, supervisor_id=relationship_data['supervisor_id'],
-                                             student_id=relationship_data['student_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Supervision relationship deleted"
+                    success = neo4j.delete_supervision(
+                        relationship_data['supervisor_id'],
+                        relationship_data['student_id']
+                    )
+                    message = "Supervision relationship deleted"
 
             elif relationship_type == 'TEAMWORK_WITH':
                 if 'researcher1_id' in relationship_data and 'researcher2_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (r1:Researcher {id: $id1})-[rel:TEAMWORK_WITH]-(r2:Researcher {id: $id2})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, id1=relationship_data['researcher1_id'], id2=relationship_data['researcher2_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Teamwork relationship deleted"
+                    success = neo4j.delete_teamwork(
+                        relationship_data['researcher1_id'],
+                        relationship_data['researcher2_id']
+                    )
+                    message = "Teamwork relationship deleted"
 
             elif relationship_type == 'PARTICIPATED_IN':
                 if 'researcher_id' in relationship_data and 'project_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (r:Researcher {id: $researcher_id})-[rel:PARTICIPATED_IN]->(p:Project {id: $project_id})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, researcher_id=relationship_data['researcher_id'],
-                                             project_id=relationship_data['project_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Project participation deleted"
+                    success = neo4j.delete_participation(
+                        relationship_data['researcher_id'],
+                        relationship_data['project_id']
+                    )
+                    message = "Project participation deleted"
 
             elif relationship_type == 'AUTHORED':
                 if 'researcher_id' in relationship_data and 'publication_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, researcher_id=relationship_data['researcher_id'],
-                                             publication_id=relationship_data['publication_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Authorship relationship deleted"
+                    success = neo4j.delete_authorship(
+                        relationship_data['researcher_id'],
+                        relationship_data['publication_id']
+                    )
+                    message = "Authorship relationship deleted"
 
             elif relationship_type == 'PRODUCED':
                 if 'project_id' in relationship_data and 'publication_id' in relationship_data:
-                    with neo4j.driver.session() as session:
-                        result = session.run("""
-                            MATCH (p:Project {id: $project_id})-[rel:PRODUCED]->(pub:Publication {id: $publication_id})
-                            DELETE rel
-                            RETURN count(rel) as deleted
-                        """, project_id=relationship_data['project_id'],
-                                             publication_id=relationship_data['publication_id'])
-
-                        record = result.single()
-                        if record and record['deleted'] > 0:
-                            redis_manager.track_activity(deleter_id, 'delete_relationship', {
-                                'relationship_type': relationship_type,
-                                'relationship_data': relationship_data,
-                                'timestamp': datetime.utcnow().isoformat()
-                            })
-                            redis_manager.cache_delete_pattern("*")
-                            return True, "Produced relationship deleted"
+                    success = neo4j.delete_produced_relationship(
+                        relationship_data['project_id'],
+                        relationship_data['publication_id']
+                    )
+                    message = "Produced relationship deleted"
 
             else:
                 return False, f"Unknown relationship type: {relationship_type}"
 
-            return False, f"Failed to delete {relationship_type} relationship"
+            if success:
+                redis_manager.track_activity(deleter_id, 'delete_relationship', {
+                    'relationship_type': relationship_type,
+                    'relationship_data': relationship_data,
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+
+                redis_manager.cache_delete_pattern("*")
+
+                return True, message
+            else:
+                return False, f"Failed to delete {relationship_type} relationship"
 
         except Exception as e:
             print(f"Error deleting relationship: {e}")
@@ -723,32 +667,32 @@ class CollaborationService:
                 {
                     'name': 'CO_AUTHORED_WITH',
                     'description': 'Researcher co-authored with another researcher',
-                    'count': relationship_counts.get('CO_AUTHORED_WITH', 0)
+                    'count': relationship_counts['CO_AUTHORED_WITH']
                 },
                 {
                     'name': 'SUPERVISED',
                     'description': 'Researcher supervised another researcher',
-                    'count': relationship_counts.get('SUPERVISED', 0)
+                    'count': relationship_counts['SUPERVISED']
                 },
                 {
                     'name': 'TEAMWORK_WITH',
                     'description': 'Researcher worked with another researcher on project',
-                    'count': relationship_counts.get('TEAMWORK_WITH', 0)
+                    'count': relationship_counts['TEAMWORK_WITH']
                 },
                 {
                     'name': 'PARTICIPATED_IN',
                     'description': 'Researcher participated in project',
-                    'count': relationship_counts.get('PARTICIPATED_IN', 0)
+                    'count': relationship_counts['PARTICIPATED_IN']
                 },
                 {
                     'name': 'AUTHORED',
                     'description': 'Researcher authored publication',
-                    'count': relationship_counts.get('AUTHORED', 0)
+                    'count': relationship_counts['AUTHORED']
                 },
                 {
                     'name': 'PRODUCED',
                     'description': 'Project produced publication',
-                    'count': relationship_counts.get('PRODUCED', 0)
+                    'count': relationship_counts['PRODUCED']
                 }
             ]
 
@@ -761,7 +705,7 @@ class CollaborationService:
                 },
                 'relationships_defined': relationships_defined,
                 'total_relationships': sum(relationship_counts.values()),
-                'has_six_relationships': len(relationships_defined) == 6
+                'has_six_relationships': True
             }
 
             return summary
