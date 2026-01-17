@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create sample data for testing
+Create large sample data for testing
 """
 
 import sys
@@ -8,6 +8,10 @@ import os
 from pathlib import Path
 from datetime import datetime, timedelta
 import bcrypt
+import random
+import string
+import time
+from faker import Faker
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -15,13 +19,230 @@ from colorama import init, Fore, Style
 
 init(autoreset=True)
 
+fake = Faker()
+
 
 def get_utc_now():
     return datetime.utcnow()
 
 
+def generate_random_password():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+
+
+def generate_researcher_data(count=100):
+    departments = [
+        'Computer Science', 'Information Technology', 'Data Science',
+        'Software Engineering', 'Cybersecurity', 'Artificial Intelligence',
+        'Networks', 'Bioinformatics', 'Computer Engineering'
+    ]
+
+    research_interests_pool = [
+        'Machine Learning', 'Deep Learning', 'Natural Language Processing',
+        'Computer Vision', 'Big Data', 'Cloud Computing', 'IoT',
+        'Blockchain', 'Quantum Computing', 'Robotics', 'Data Mining',
+        'Web Development', 'Mobile Applications', 'Game Development',
+        'Database Systems', 'Information Security', 'Network Security',
+        'Bioinformatics', 'Health Informatics', 'Educational Technology'
+    ]
+
+    researchers = []
+    for i in range(count):
+        first_name = fake.first_name()
+        last_name = fake.last_name()
+        name = f"Dr. {first_name} {last_name}"
+        email = f"{first_name.lower()}.{last_name.lower()}@university.edu"
+
+        interests = random.sample(research_interests_pool, random.randint(2, 5))
+
+        researcher = {
+            'name': name,
+            'email': email,
+            'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
+            'department': random.choice(departments),
+            'profile_status': 'approved',
+            'role': 'researcher',
+            'research_interests': interests,
+            'contact': {
+                'phone': f'0599{random.randint(100000, 999999)}',
+                'city': random.choice(['Hebron', 'Ramallah', 'Bethlehem', 'Nablus', 'Jerusalem', 'Gaza'])
+            },
+            'created_at': get_utc_now() - timedelta(days=random.randint(1, 365)),
+            'last_login': get_utc_now() - timedelta(days=random.randint(0, 30))
+        }
+        researchers.append(researcher)
+
+    return researchers
+
+
+def generate_project_data(count=50, researcher_ids=[]):
+    project_titles = [
+        'AI in Healthcare', 'Smart City Solutions', 'Renewable Energy Systems',
+        'Cybersecurity Framework', 'Big Data Analytics', 'IoT for Agriculture',
+        'Blockchain Applications', 'Virtual Reality in Education',
+        'Machine Learning Models', 'Cloud Computing Infrastructure',
+        'Mobile Health Applications', 'Automated Testing Systems',
+        'Natural Language Processing Tools', 'Computer Vision Systems',
+        'Data Privacy Solutions', 'Network Optimization',
+        'Software Development Methodologies', 'Database Management Systems',
+        'Web Application Security', 'Predictive Analytics'
+    ]
+
+    research_areas = [
+        'Artificial Intelligence', 'Software Engineering', 'Data Science',
+        'Cybersecurity', 'Networks', 'Cloud Computing', 'IoT',
+        'Mobile Computing', 'Web Technologies', 'Database Systems'
+    ]
+
+    funding_sources = [
+        'University Research Grant', 'Ministry of Education',
+        'International Research Council', 'Private Sector Partnership',
+        'EU Research Fund', 'National Science Foundation'
+    ]
+
+    projects = []
+    for i in range(count):
+        title = f"{random.choice(project_titles)} - Phase {random.randint(1, 3)}"
+
+        participants = random.sample(researcher_ids, random.randint(2, min(5, len(researcher_ids))))
+        creator_id = participants[0]
+
+        start_date = get_utc_now() - timedelta(days=random.randint(30, 365))
+        end_date = start_date + timedelta(days=random.randint(90, 720))
+
+        project = {
+            'title': title,
+            'description': fake.text(max_nb_chars=200),
+            'creator_id': creator_id,
+            'creator_name': f"Researcher {creator_id[:8]}",
+            'participants': participants,
+            'start_date': start_date.date().isoformat(),
+            'end_date': end_date.date().isoformat(),
+            'status': random.choice(['active', 'completed', 'pending']),
+            'research_area': random.choice(research_areas),
+            'tags': random.sample(['AI', 'ML', 'Data', 'Cloud', 'Security'], random.randint(2, 4)),
+            'budget': random.uniform(10000, 100000),
+            'funding_source': random.choice(funding_sources),
+            'created_at': start_date,
+            'updated_at': get_utc_now(),
+            'milestones': [
+                {
+                    'title': f'Milestone {j + 1}',
+                    'description': f'Project milestone {j + 1}',
+                    'due_date': (start_date + timedelta(days=30 * (j + 1))).date().isoformat(),
+                    'completed': j < random.randint(1, 3)
+                }
+                for j in range(random.randint(3, 6))
+            ]
+        }
+        projects.append(project)
+
+    return projects
+
+
+def generate_publication_data(count=30, researcher_ids=[]):
+    journals = [
+        'Journal of Computer Science', 'IEEE Transactions',
+        'ACM Computing Surveys', 'Science Direct',
+        'Springer Nature', 'Elsevier', 'Wiley'
+    ]
+
+    keywords_pool = [
+        'machine learning', 'deep learning', 'artificial intelligence',
+        'data mining', 'cloud computing', 'cybersecurity',
+        'internet of things', 'big data', 'blockchain',
+        'natural language processing', 'computer vision'
+    ]
+
+    publications = []
+    for i in range(count):
+        title = fake.sentence(nb_words=8, variable_nb_words=True)
+
+        num_authors = random.randint(1, min(6, len(researcher_ids)))
+        authors = random.sample(researcher_ids, num_authors)
+
+        publication = {
+            'title': title,
+            'authors': [
+                {
+                    'researcher_id': author_id,
+                    'name': f"Researcher {author_id[:8]}",
+                    'order': j + 1,
+                    'affiliation': 'Palestine Polytechnic University',
+                    'contribution': random.choice(['Main researcher', 'Data analysis', 'Writing', 'Experiments'])
+                }
+                for j, author_id in enumerate(authors)
+            ],
+            'year': random.randint(2018, 2024),
+            'doi': f"10.1000/{int(time.time() * 1000)}_{i}_{random.randint(1000, 9999)}",
+            'journal': random.choice(journals),
+            'abstract': fake.text(max_nb_chars=300),
+            'keywords': random.sample(keywords_pool, random.randint(3, 6)),
+            'citation_count': random.randint(0, 100),
+            'status': 'published',
+            'views': random.randint(50, 1000),
+            'downloads': random.randint(10, 500),
+            'created_at': get_utc_now() - timedelta(days=random.randint(1, 365)),
+            'updated_at': get_utc_now()
+        }
+        publications.append(publication)
+
+    return publications
+
+
+def create_diverse_relationships(researcher_ids, project_ids, publication_ids):
+    relationships_created = {
+        'SUPERVISED': 0,
+        'AUTHORED': 0,
+        'PRODUCED': 0,
+        'CO_AUTHORED_WITH': 0,
+        'TEAMWORK_WITH': 0,
+        'PARTICIPATED_IN': 0
+    }
+
+    for project_id in project_ids:
+        supervisor_id = random.choice(researcher_ids)
+        if neo4j.create_project_supervision(supervisor_id, project_id):
+            relationships_created['SUPERVISED'] += 1
+
+        participants = random.sample(researcher_ids, random.randint(2, 5))
+        for participant_id in participants:
+            if participant_id != supervisor_id:
+                if neo4j.create_project_participation(participant_id, project_id):
+                    relationships_created['PARTICIPATED_IN'] += 1
+
+    for publication_id in publication_ids:
+        authors = random.sample(researcher_ids, random.randint(2, 4))
+        for i, author_id in enumerate(authors, 1):
+            if neo4j.create_authorship(author_id, publication_id, i):
+                relationships_created['AUTHORED'] += 1
+
+        for j in range(len(authors)):
+            for k in range(j + 1, len(authors)):
+                researcher1_id = authors[j]
+                researcher2_id = authors[k]
+                if neo4j.create_coauthorship(researcher1_id, researcher2_id, publication_id):
+                    relationships_created['CO_AUTHORED_WITH'] += 1
+
+    for publication_id in publication_ids[:len(project_ids)]:
+        project_id = random.choice(project_ids)
+        if neo4j.create_produced_relationship(project_id, publication_id):
+            relationships_created['PRODUCED'] += 1
+
+    for i in range(len(researcher_ids) * 2):
+        researcher1 = random.choice(researcher_ids)
+        researcher2 = random.choice(researcher_ids)
+        if researcher1 != researcher2:
+            if random.random() > 0.5:
+                if neo4j.create_teamwork(researcher1, researcher2):
+                    relationships_created['TEAMWORK_WITH'] += 1
+
+    return relationships_created
+
+
 print(f"{Fore.CYAN}{'=' * 70}")
-print(f"{Fore.YELLOW}CREATING SAMPLE DATA FOR TESTING")
+print(f"{Fore.YELLOW}CREATING LARGE SAMPLE DATA FOR TESTING")
+print(f"{Fore.YELLOW}TARGET: 100 Researchers, 50 Projects, 30 Publications")
 print(f"{Fore.CYAN}{'=' * 70}")
 
 try:
@@ -31,62 +252,24 @@ try:
 
     print(f"\n{Fore.GREEN}Database modules imported successfully")
 
-    print(f"\n{Fore.YELLOW}Step 1: Deleting existing test data...")
-
+    print(f"\n{Fore.YELLOW}Step 1: Cleaning existing data...")
     if mongodb.client:
-        delete_result = mongodb.db.researchers.delete_many({
-            'email': {'$in': [
-                'ahmed.ali@university.edu',
-                'sara.mohamed@university.edu',
-                'omar.hassan@university.edu'
-            ]}
-        })
-        print(f"{Fore.GREEN}Deleted {delete_result.deleted_count} existing test researchers")
+        collections = ['researchers', 'projects', 'publications']
+        for collection in collections:
+            count = mongodb.db[collection].count_documents({})
+            if count > 0:
+                result = mongodb.db[collection].delete_many({})
+                print(f"{Fore.YELLOW}   Deleted {result.deleted_count} documents from {collection}")
 
-    print(f"\n{Fore.YELLOW}Step 2: Creating Sample Researchers...")
-
-    sample_researchers = [
-        {
-            'name': 'Dr. Ahmed Ali',
-            'email': 'ahmed.ali@university.edu',
-            'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            'department': 'Computer Science',
-            'profile_status': 'approved',
-            'role': 'researcher',
-            'research_interests': ['AI', 'Machine Learning', 'Data Science'],
-            'contact': {'phone': '0599123456', 'city': 'Hebron'},
-            'created_at': get_utc_now()
-        },
-        {
-            'name': 'Dr. Sara Mohamed',
-            'email': 'sara.mohamed@university.edu',
-            'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            'department': 'Information Technology',
-            'profile_status': 'approved',
-            'role': 'researcher',
-            'research_interests': ['Networks', 'Security', 'Cloud Computing'],
-            'contact': {'phone': '0599765432', 'city': 'Ramallah'},
-            'created_at': get_utc_now()
-        },
-        {
-            'name': 'Dr. Omar Hassan',
-            'email': 'omar.hassan@university.edu',
-            'password': bcrypt.hashpw('password123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            'department': 'Data Science',
-            'profile_status': 'approved',
-            'role': 'researcher',
-            'research_interests': ['Big Data', 'Statistics', 'Data Mining'],
-            'contact': {'phone': '0599888777', 'city': 'Bethlehem'},
-            'created_at': get_utc_now()
-        }
-    ]
-
+    print(f"\n{Fore.YELLOW}Step 2: Creating 100 Researchers...")
+    researchers_data = generate_researcher_data(100)
     researcher_ids = []
-    for researcher_data in sample_researchers:
-        researcher_id = mongodb.create_researcher(researcher_data)
 
+    for i, researcher_data in enumerate(researchers_data, 1):
+        researcher_id = mongodb.create_researcher(researcher_data)
         if researcher_id:
             researcher_ids.append(researcher_id)
+
             neo4j.create_researcher_node({
                 'id': researcher_id,
                 'name': researcher_data['name'],
@@ -94,145 +277,92 @@ try:
                 'department': researcher_data['department'],
                 'profile_status': researcher_data['profile_status']
             })
-            print(f"{Fore.GREEN}{researcher_data['name']} - {researcher_id}")
-        else:
-            print(f"{Fore.RED}Failed to create {researcher_data['name']}")
 
-    print(f"{Fore.WHITE}Total researchers created: {len(researcher_ids)}")
+            if i % 20 == 0:
+                print(f"{Fore.GREEN}   Created {i} researchers...")
 
-    print(f"\n{Fore.YELLOW}Step 3: Creating Diverse Relationships...")
+    print(f"{Fore.GREEN}SUCCESS: Created {len(researcher_ids)} researchers")
 
-    if len(researcher_ids) >= 3:
-        # Ahmed & Sara: Multiple relationship types
-        count1 = neo4j.create_coauthorship(researcher_ids[0], researcher_ids[1])
-        count2 = neo4j.create_teamwork(researcher_ids[0], researcher_ids[1])
+    print(f"\n{Fore.YELLOW}Step 3: Creating 50 Projects...")
+    projects_data = generate_project_data(50, researcher_ids)
+    project_ids = []
 
-        # Ahmed & Omar: Different relationship types
-        count3 = neo4j.create_coauthorship(researcher_ids[0], researcher_ids[2])
-        count4 = neo4j.create_supervision(researcher_ids[0], researcher_ids[2])
-
-        # Sara & Omar: Teamwork
-        count5 = neo4j.create_teamwork(researcher_ids[1], researcher_ids[2])
-
-        r1 = mongodb.get_researcher(researcher_ids[0])
-        r2 = mongodb.get_researcher(researcher_ids[1])
-        r3 = mongodb.get_researcher(researcher_ids[2])
-
-        if r1 and r2:
-            print(f"{Fore.GREEN}Ahmed Ali & Sara Mohamed: CO_AUTHORED_WITH & TEAMWORK_WITH")
-        if r1 and r3:
-            print(f"{Fore.GREEN}Ahmed Ali & Omar Hassan: CO_AUTHORED_WITH & SUPERVISED")
-        if r2 and r3:
-            print(f"{Fore.GREEN}Sara Mohamed & Omar Hassan: TEAMWORK_WITH")
-
-    print(f"\n{Fore.YELLOW}Step 4: Creating Sample Project...")
-
-    if len(researcher_ids) >= 2:
-        project_data = {
-            'title': 'AI in Healthcare Research',
-            'description': 'Research on applying machine learning to healthcare diagnostics',
-            'creator_id': researcher_ids[0],
-            'creator_name': 'Dr. Ahmed Ali',
-            'participants': researcher_ids[:2],
-            'start_date': get_utc_now().date().isoformat(),
-            'end_date': (get_utc_now() + timedelta(days=180)).date().isoformat(),
-            'status': 'active',
-            'research_area': 'Artificial Intelligence',
-            'tags': ['AI', 'Healthcare', 'Machine Learning'],
-            'budget': 50000.0,
-            'funding_source': 'University Research Grant',
-            'created_at': get_utc_now(),
-            'updated_at': get_utc_now()
-        }
-
+    for i, project_data in enumerate(projects_data, 1):
         project_id = mongodb.create_project(project_data)
         if project_id:
-            print(f"{Fore.GREEN}Project created: {project_data['title']}")
-            print(f"{Fore.WHITE}ID: {project_id}")
+            project_ids.append(project_id)
 
-            # Create project participation relationships
-            for participant_id in project_data['participants']:
-                neo4j.create_project_participation(participant_id, project_id)
-            print(f"{Fore.GREEN}Project participation relationships created")
-        else:
-            print(f"{Fore.RED}Failed to create project")
+            if i % 10 == 0:
+                print(f"{Fore.GREEN}   Created {i} projects...")
 
-    print(f"\n{Fore.YELLOW}Step 5: Creating Sample Publication...")
+    print(f"{Fore.GREEN}SUCCESS: Created {len(project_ids)} projects")
 
-    if len(researcher_ids) >= 2:
-        publication_data = {
-            'title': 'Deep Learning Approaches for Medical Image Analysis',
-            'authors': [
-                {
-                    'researcher_id': researcher_ids[0],
-                    'name': 'Dr. Ahmed Ali',
-                    'order': 1,
-                    'affiliation': 'Computer Science Department',
-                    'contribution': 'Lead researcher'
-                },
-                {
-                    'researcher_id': researcher_ids[1],
-                    'name': 'Dr. Sara Mohamed',
-                    'order': 2,
-                    'affiliation': 'IT Department',
-                    'contribution': 'Data analysis'
-                }
-            ],
-            'year': 2024,
-            'doi': '10.1000/sample124',  # Changed DOI to avoid duplicate
-            'journal': 'Journal of Medical AI',
-            'abstract': 'This paper presents novel deep learning approaches...',
-            'keywords': ['Deep Learning', 'Medical Imaging', 'AI'],
-            'citation_count': 15,
-            'status': 'published',
-            'views': 300,
-            'downloads': 150,
-            'created_at': get_utc_now(),
-            'updated_at': get_utc_now()
-        }
+    print(f"\n{Fore.YELLOW}Step 4: Creating 30 Publications...")
+    publications_data = generate_publication_data(30, researcher_ids)
+    publication_ids = []
 
+    for i, publication_data in enumerate(publications_data, 1):
         publication_id = mongodb.create_publication(publication_data)
         if publication_id:
-            print(f"{Fore.GREEN}Publication created: {publication_data['title']}")
-            print(f"{Fore.WHITE}ID: {publication_id}")
-        else:
-            print(f"{Fore.RED}Failed to create publication")
+            publication_ids.append(publication_id)
+
+            if i % 5 == 0:
+                print(f"{Fore.GREEN}   Created {i} publications...")
+
+    print(f"{Fore.GREEN}SUCCESS: Created {len(publication_ids)} publications")
+
+    print(f"\n{Fore.YELLOW}Step 5: Creating All Relationships...")
+    relationships_created = create_diverse_relationships(researcher_ids, project_ids, publication_ids)
+
+    print(f"\n{Fore.GREEN}Relationships Created:")
+    for rel_type, count in relationships_created.items():
+        if count > 0:
+            print(f"   {rel_type}: {count} relationships")
+
+    total_relationships = sum(relationships_created.values())
+    print(f"\n{Fore.GREEN}TOTAL RELATIONSHIPS CREATED: {total_relationships}")
 
     print(f"\n{Fore.YELLOW}Step 6: Redis Caching...")
-
     if redis_manager.is_connected():
         try:
-            redis_manager.client.set("sample_data:created", get_utc_now().isoformat(), ex=300)
-            redis_manager.client.set("sample_data:researcher_count", len(researcher_ids), ex=300)
-            print(f"{Fore.GREEN}Simple caching completed")
+            redis_manager.client.set("large_dataset:created", get_utc_now().isoformat(), ex=600)
+            redis_manager.client.set("large_dataset:researchers", len(researcher_ids), ex=600)
+            redis_manager.client.set("large_dataset:projects", len(project_ids), ex=600)
+            redis_manager.client.set("large_dataset:publications", len(publication_ids), ex=600)
+            redis_manager.client.set("large_dataset:relationships", total_relationships, ex=600)
 
-            keys = redis_manager.client.keys("*")
-            print(f"{Fore.WHITE}Total keys in Redis: {len(keys)}")
+            print(f"{Fore.GREEN}   Data cached in Redis")
         except Exception as e:
-            print(f"{Fore.YELLOW}Redis caching error: {e}")
+            print(f"{Fore.YELLOW}   Redis caching error: {e}")
 
     print(f"\n{Fore.CYAN}{'=' * 70}")
-    print(f"{Fore.GREEN}SAMPLE DATA CREATION COMPLETED!")
+    print(f"{Fore.GREEN}LARGE DATASET CREATION COMPLETED!")
     print(f"\n{Fore.YELLOW}Summary:")
     print(f"{Fore.WHITE}Researchers: {len(researcher_ids)}")
-    print(f"{Fore.WHITE}Projects: {1 if 'project_id' in locals() else 0}")
-    print(f"{Fore.WHITE}Publications: {1 if 'publication_id' in locals() else 0}")
+    print(f"{Fore.WHITE}Projects: {len(project_ids)}")
+    print(f"{Fore.WHITE}Publications: {len(publication_ids)}")
+    print(f"{Fore.WHITE}Total Relationships: {total_relationships}")
 
-    print(f"\n{Fore.YELLOW}Test Credentials:")
-    print(f"{Fore.WHITE}Admin: admin@university.edu / admin123")
-    print(f"{Fore.WHITE}Researcher 1: ahmed.ali@university.edu / password123")
-    print(f"{Fore.WHITE}Researcher 2: sara.mohamed@university.edu / password123")
-    print(f"{Fore.WHITE}Researcher 3: omar.hassan@university.edu / password123")
+    print(f"\n{Fore.YELLOW}Relationships Breakdown:")
+    for rel_type, count in relationships_created.items():
+        if count > 0:
+            print(f"{Fore.WHITE}  {rel_type}: {count}")
+
+    print(f"\n{Fore.YELLOW}Sample Credentials (all use 'password123'):")
+    print(f"{Fore.WHITE}Admin: admin@university.edu")
+    print(f"{Fore.WHITE}Random researcher: {researchers_data[0]['email']}")
+    print(f"{Fore.WHITE}Random researcher: {researchers_data[50]['email']}")
 
     print(f"\n{Fore.YELLOW}Next steps:")
     print(f"{Fore.WHITE}1. Check MongoDB: python check_mongodb.py")
-    print(f"{Fore.WHITE}2. Check Neo4j in browser: http://localhost:7474")
-    print(f"{Fore.WHITE}3. Run main system: python run.py")
+    print(f"{Fore.WHITE}2. Check Neo4j: http://localhost:7474")
+    print(f"{Fore.WHITE}3. Run system: python run.py")
+    print(f"{Fore.WHITE}4. View statistics: python run.py 5")
 
     print(f"{Fore.CYAN}{'=' * 70}")
 
 except Exception as e:
-    print(f"{Fore.RED}Error creating sample data: {e}")
+    print(f"{Fore.RED}Error creating large dataset: {e}")
     import traceback
 
     traceback.print_exc()

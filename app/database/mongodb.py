@@ -401,3 +401,106 @@ def get_pending_researchers(self):
     except PyMongoError as e:
         print(f"{Fore.RED}FAIL: Error getting pending researchers: {e}")
         return []
+    # ============= Admin Operations =============
+
+    def create_admin(self, admin_data: Dict) -> Optional[str]:
+        """Create new admin"""
+        try:
+            admin_data['created_at'] = datetime.utcnow()
+            admin_data['updated_at'] = datetime.utcnow()
+
+            result = self.db.admins.insert_one(admin_data)
+            return str(result.inserted_id)
+        except DuplicateKeyError:
+            print(f"{Fore.RED}FAIL: Email already exists for admin")
+            return None
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error creating admin: {e}")
+            return None
+
+    def get_admin_by_email(self, email: str) -> Optional[Dict]:
+        """Get admin by email"""
+        try:
+            admin = self.db.admins.find_one({'email': email})
+            if admin:
+                admin['_id'] = str(admin['_id'])
+            return admin
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error getting admin by email: {e}")
+            return None
+
+    def get_admin(self, admin_id: str) -> Optional[Dict]:
+        """Get admin by ID"""
+        try:
+            admin = self.db.admins.find_one({'_id': ObjectId(admin_id)})
+            if admin:
+                admin['_id'] = str(admin['_id'])
+            return admin
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error getting admin: {e}")
+            return None
+
+    def update_admin(self, admin_id: str, update_data: Dict) -> bool:
+        """Update admin data"""
+        try:
+            update_data['updated_at'] = datetime.utcnow()
+            result = self.db.admins.update_one(
+                {'_id': ObjectId(admin_id)},
+                {'$set': update_data}
+            )
+            return result.modified_count > 0
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error updating admin: {e}")
+            return False
+
+    # ============= Admin Operations =============
+
+    def create_admin(self, admin_data: Dict) -> Optional[str]:
+        """Create new admin"""
+        try:
+            admin_data['created_at'] = datetime.utcnow()
+            admin_data['updated_at'] = datetime.utcnow()
+
+            result = self.db.admins.insert_one(admin_data)
+            return str(result.inserted_id)
+        except DuplicateKeyError:
+            print(f"{Fore.RED}FAIL: Email already exists for admin")
+            return None
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error creating admin: {e}")
+            return None
+
+    def get_admin_by_email(self, email: str) -> Optional[Dict]:
+        """Get admin by email"""
+        try:
+            admin = self.db.admins.find_one({'email': email})
+            if admin:
+                admin['_id'] = str(admin['_id'])
+            return admin
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error getting admin by email: {e}")
+            return None
+
+    def get_admin(self, admin_id: str) -> Optional[Dict]:
+        """Get admin by ID"""
+        try:
+            admin = self.db.admins.find_one({'_id': ObjectId(admin_id)})
+            if admin:
+                admin['_id'] = str(admin['_id'])
+            return admin
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error getting admin: {e}")
+            return None
+
+    def update_admin(self, admin_id: str, update_data: Dict) -> bool:
+        """Update admin data"""
+        try:
+            update_data['updated_at'] = datetime.utcnow()
+            result = self.db.admins.update_one(
+                {'_id': ObjectId(admin_id)},
+                {'$set': update_data}
+            )
+            return result.modified_count > 0
+        except PyMongoError as e:
+            print(f"{Fore.RED}FAIL: Error updating admin: {e}")
+            return False

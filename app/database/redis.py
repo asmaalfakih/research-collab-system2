@@ -25,7 +25,6 @@ class RedisManager:
         print(f"CONNECT: Attempting Redis connection to {config['host']}:{config['port']}")
 
         try:
-            # Basic connection settings
             connection_kwargs = {
                 'host': config['host'],
                 'port': config['port'],
@@ -34,34 +33,22 @@ class RedisManager:
                 'socket_connect_timeout': 10,
             }
 
-            # Add username and password if available
             if config.get('username'):
                 connection_kwargs['username'] = config['username']
             if config.get('password'):
                 connection_kwargs['password'] = config['password']
 
-            # Simplified SSL handling
-            # Most Redis Cloud issues are solved by setting REDIS_SSL=False
-            if config.get('ssl'):
-                # Convert value to boolean
-                ssl_value = str(config['ssl']).lower()
-                if ssl_value in ['true', '1', 'yes']:
-                    connection_kwargs['ssl'] = True
-                    # Remove ssl_cert_reqs to avoid WRONG_VERSION_NUMBER issue
-                    # connection_kwargs['ssl_cert_reqs'] = ssl.CERT_NONE
-                else:
-                    connection_kwargs['ssl'] = False
+            ssl_value = str(config.get('ssl', False)).lower()
+            if ssl_value in ['true', '1', 'yes']:
+                connection_kwargs['ssl'] = True
 
             print(f"   SSL setting: {connection_kwargs.get('ssl', False)}")
 
-            # Attempt connection
             self.client = redis.Redis(**connection_kwargs)
 
-            # Test connection
             if self.client.ping():
                 print(f"{Fore.GREEN}PASS: Redis connected successfully!")
 
-                # Additional test
                 try:
                     self.client.set("connection_test", "ok", ex=5)
                     test_result = self.client.get("connection_test")
@@ -101,8 +88,6 @@ class RedisManager:
         """Check connection"""
         return self.client is not None and self.client.ping()
 
-    # ============= Session Management =============
-
     def create_session(self, user_id: str, user_data: Dict, ttl_hours: int = 24) -> Optional[str]:
         """Create new session"""
         if not self.is_connected():
@@ -123,11 +108,9 @@ class RedisManager:
         }
 
         try:
-            # Save session
             self.client.hset(session_key, mapping=session_data)
             self.client.expire(session_key, ttl_hours * 3600)
 
-            # Update user's active sessions list
             user_sessions_key = f"user_sessions:{user_id}"
             self.client.sadd(user_sessions_key, session_id)
             self.client.expire(user_sessions_key, ttl_hours * 3600)
@@ -149,19 +132,16 @@ class RedisManager:
             if not session_data:
                 return None
 
-            # Check expiration
             expires_at = datetime.fromisoformat(session_data.get('expires_at', ''))
             if datetime.utcnow() > expires_at:
                 self.delete_session(session_id)
                 return None
 
-            # Update last activity
             session_data['last_activity'] = datetime.utcnow().isoformat()
             self.client.hset(session_key, 'last_activity', session_data['last_activity'])
 
-            # Renew session if about to expire
             ttl = self.client.ttl(session_key)
-            if ttl < 3600:  # If less than 1 hour remaining
+            if ttl < 3600:
                 self.client.expire(session_key, 24 * 3600)
 
             return session_data
@@ -181,7 +161,22 @@ class RedisManager:
             print(f"{Fore.RED}FAIL: Error deleting session: {e}")
             return False
 
-    # ============= Caching System =============
+    def cache_get(self, key: str) -> Optional[Any]:
+        """Get data from cache"""
+        if not self.is_connected():
+            return None
+
+        try:
+            value = self.client.get(key)
+            if value:
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    return value
+            return None
+        except Exception as e:
+            print(f"{Fore.RED}FAIL: Cache get error: {e}")
+            return None
 
     def cache_set(self, key: str, value: Any, ttl_seconds: int = 300) -> bool:
         """Save data to cache"""
@@ -192,16 +187,10 @@ class RedisManager:
             import json
             from datetime import datetime, date
 
-            # Helper function to serialize various date types
             def json_serializer(obj):
-                """Custom JSON serializer for various types"""
-                # Handle Python datetime and date
                 if isinstance(obj, (datetime, date)):
                     return obj.isoformat()
-
-                # Handle Neo4j Date type
                 try:
-                    # Check if it's a Neo4j Date object
                     if hasattr(obj, 'iso_format'):
                         return obj.iso_format()
                     if hasattr(obj, 'to_native'):
@@ -210,28 +199,21 @@ class RedisManager:
                         return obj.isoformat()
                 except:
                     pass
-
-                # Handle other unsupported types
                 raise TypeError(f"Type {type(obj)} not serializable")
 
-            # Convert to JSON with custom serializer
             if isinstance(value, (dict, list, tuple)):
                 try:
                     value = json.dumps(value, default=json_serializer, ensure_ascii=False)
                 except TypeError:
-                    # Fallback: convert Neo4j objects to dict first
                     try:
-                        # Try to convert Neo4j Record objects
                         if hasattr(value, 'items'):
                             value = dict(value.items())
                             value = json.dumps(value, default=json_serializer, ensure_ascii=False)
                         else:
-                            # Last resort: convert to string
                             value = str(value)
                     except:
                         value = str(value)
 
-            # Store in Redis
             self.client.set(key, value, ex=ttl_seconds)
             return True
         except Exception as e:
@@ -245,12 +227,9 @@ class RedisManager:
 
         return bool(self.client.delete(key))
 
-    # ============= Simplified Analytics =============
-
     def track_activity(self, user_id: str, action: str, metadata: Dict = None) -> bool:
         """Track user activity (without Redis if disabled)"""
         if not self.is_connected():
-            # Log to memory or temporary file
             print(f"ACTIVITY (no Redis): {user_id} - {action}")
             return False
 
@@ -262,7 +241,6 @@ class RedisManager:
                 'timestamp': datetime.utcnow().isoformat()
             }
 
-            # Store in activities list
             self.client.lpush("recent_activities", json.dumps(activity))
             self.client.ltrim("recent_activities", 0, 99)
 
@@ -289,8 +267,6 @@ class RedisManager:
             print(f"{Fore.RED}FAIL: Error getting recent activities: {e}")
             return []
 
-    # ============= System Stats =============
-
     def get_system_stats(self) -> Dict:
         """Get system statistics"""
         if not self.is_connected():
@@ -302,7 +278,6 @@ class RedisManager:
         try:
             info = self.client.info()
 
-            # Extract important information
             stats = {
                 'status': 'connected',
                 'version': info.get('redis_version', 'unknown'),
@@ -316,8 +291,6 @@ class RedisManager:
             print(f"{Fore.RED}FAIL: Error getting system stats: {e}")
             return {'status': 'error', 'message': str(e)}
 
-    # ============= Utility Methods =============
-
     def close(self):
         """Close connection"""
         if self.client:
@@ -328,5 +301,4 @@ class RedisManager:
                 pass
 
 
-# Create global instance
 redis_manager = RedisManager()

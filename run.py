@@ -25,8 +25,8 @@ def display_banner():
     {Fore.CYAN}{'=' * 70}
     {Fore.GREEN}RESEARCH COLLABORATION SYSTEM - NOSQL DATABASE PROJECT
     {Fore.CYAN}{'=' * 70}
-    {Fore.YELLOW}MULTI-DATABASE INTEGRATION PLATFORM
-    {Fore.MAGENTA}MONGODB | NEO4J | REDIS | FULL INTEGRATION
+    {Fore.YELLOW}MULTI-DATABASE INTEGRATION PLATFORM - LARGE DATASET MODE
+    {Fore.MAGENTA}MONGODB | NEO4J | REDIS | 100+ RESEARCHERS | 50+ PROJECTS
 
     {Fore.CYAN}PALESTINE POLYTECHNIC UNIVERSITY
     {Fore.CYAN}COURSE: NOSQL DATABASE
@@ -35,24 +35,45 @@ def display_banner():
 
     {Fore.WHITE}MAIN MENU - AVAILABLE COMMANDS:
 
-    {Fore.GREEN}[1]{Fore.WHITE} Setup System         {Fore.CYAN}- Initial system setup
+    {Fore.GREEN}[1]{Fore.WHITE} Setup System         {Fore.CYAN}- Large dataset setup
     {Fore.GREEN}[2]{Fore.WHITE} Test Connections     {Fore.CYAN}- Test all connections
     {Fore.GREEN}[3]{Fore.WHITE} Admin Interface      {Fore.CYAN}- Admin interface
     {Fore.GREEN}[4]{Fore.WHITE} Researcher Interface {Fore.CYAN}- Researcher interface
-    {Fore.GREEN}[5]{Fore.WHITE} System Statistics    {Fore.CYAN}- View system statistics
+    {Fore.GREEN}[5]{Fore.WHITE} System Statistics    {Fore.CYAN}- View detailed statistics
 
     {Fore.WHITE}DEVELOPER TOOLS:
 
     {Fore.GREEN}[6]{Fore.WHITE} Initialize Databases {Fore.CYAN}- Initialize databases
-    {Fore.GREEN}[7]{Fore.WHITE} Import Sample Data   {Fore.CYAN}- Add sample data
+    {Fore.GREEN}[7]{Fore.WHITE} Import LARGE Data    {Fore.CYAN}- 100 researchers, 50 projects, 30 publications
     {Fore.GREEN}[8]{Fore.WHITE} Backup System        {Fore.CYAN}- System backup
     {Fore.GREEN}[9]{Fore.WHITE} Cleanup Test Data    {Fore.CYAN}- Clean test data
-    {Fore.GREEN}[r]{Fore.WHITE} Redis Tools          {Fore.CYAN}- Redis tools
+    {Fore.GREEN}[R]{Fore.WHITE} 6 Relationships      {Fore.CYAN}- Show 6 relationships summary
     {Fore.GREEN}[0]{Fore.WHITE} Exit                 {Fore.CYAN}- Exit
 
     {Fore.CYAN}{'=' * 70}
     """
     print(banner)
+
+
+def check_faker_installation():
+    """Check if Faker library is installed"""
+    try:
+        import faker
+        return True
+    except ImportError:
+        return False
+
+
+def install_faker():
+    """Install Faker library"""
+    print(f"{Fore.YELLOW}Installing Faker library...")
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "Faker"], check=True)
+        print(f"{Fore.GREEN}Faker library installed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"{Fore.RED}Failed to install Faker: {e}")
+        return False
 
 
 def check_redis_config():
@@ -150,6 +171,16 @@ def display_test_result(test_name, passed):
 def setup_system():
     """Initial system setup"""
     print(f"\n{Fore.YELLOW}START: Setting up Research Collaboration System...")
+    print(f"{Fore.CYAN}Large Dataset Mode: 100 Researchers, 50 Projects, 30 Publications")
+
+    if not check_faker_installation():
+        print(f"{Fore.YELLOW}WARNING: Faker library not installed")
+        print(f"{Fore.WHITE}  Large dataset creation requires Faker library")
+        install = input(f"{Fore.YELLOW}Install Faker now? (yes/no): ").strip().lower()
+        if install in ['yes', 'y']:
+            install_faker()
+        else:
+            print(f"{Fore.YELLOW}WARNING: Large dataset features will be limited")
 
     check_redis_config()
 
@@ -158,7 +189,7 @@ def setup_system():
         results = db_manager.check_all_connections()
 
         print(f"\n{Fore.CYAN}{'─' * 50}")
-        print(f"{Fore.WHITE}DATABASE CONNECTION STATUS")
+        print(f"{Fore.WHITE}DATABASE CONNECTION STATUS - LARGE DATASET MODE")
         print(f"{Fore.CYAN}{'─' * 50}")
 
         for db_name, result in results.items():
@@ -180,10 +211,17 @@ def setup_system():
                 print(f"{Fore.YELLOW}WARNING: Redis cache is disabled")
                 print(f"{Fore.WHITE}   System will work but without caching features")
 
+            print(f"\n{Fore.YELLOW}Large Dataset Features:")
+            print(f"   {Fore.WHITE}• 100 realistic researchers")
+            print(f"   {Fore.WHITE}• 50 diverse projects")
+            print(f"   {Fore.WHITE}• 30 academic publications")
+            print(f"   {Fore.WHITE}• 300+ collaboration relationships")
+
             print(f"\n{Fore.YELLOW}Next steps:")
             print(f"   {Fore.WHITE}1. Initialize databases: {Fore.CYAN}Select option 6")
-            print(f"   {Fore.WHITE}2. Try researcher interface: {Fore.CYAN}Select option 4")
-            print(f"   {Fore.WHITE}3. Try admin interface: {Fore.CYAN}Select option 3")
+            print(f"   {Fore.WHITE}2. Create large dataset: {Fore.CYAN}Select option 7")
+            print(f"   {Fore.WHITE}3. View statistics: {Fore.CYAN}Select option 5")
+            print(f"   {Fore.WHITE}4. Try admin interface: {Fore.CYAN}Select option 3")
 
         else:
             print(f"\n{Fore.YELLOW}WARNING: Critical databases failed to connect.")
@@ -212,7 +250,7 @@ def test_system():
         results = db_manager.check_all_connections()
 
         print(f"\n{Fore.CYAN}{'=' * 60}")
-        print(f"{Fore.WHITE}SYSTEM TEST RESULTS")
+        print(f"{Fore.WHITE}SYSTEM TEST RESULTS - LARGE DATASET MODE")
         print(f"{Fore.CYAN}{'=' * 60}")
 
         test_results = []
@@ -356,7 +394,7 @@ def test_system():
             test_results.append(("Redis", False))
 
         print(f"\n{Fore.CYAN}{'=' * 60}")
-        print(f"{Fore.WHITE}TEST SUMMARY")
+        print(f"{Fore.WHITE}TEST SUMMARY - LARGE DATASET MODE")
         print(f"{Fore.CYAN}{'=' * 60}")
 
         for test_name, result in test_results:
@@ -374,7 +412,7 @@ def test_system():
         if failed_tests == 0:
             if warning_tests == 0:
                 print(f"{Fore.GREEN}ALL TESTS PASSED: {passed_tests}/{total_tests}")
-                print(f"{Fore.GREEN}System is ready for production use!")
+                print(f"{Fore.GREEN}System is ready for production use with large dataset!")
             else:
                 print(f"{Fore.YELLOW}ALL CRITICAL TESTS PASSED: {passed_tests}/{total_tests - warning_tests}")
                 print(f"{Fore.YELLOW}   Warnings: {warning_tests}")
@@ -385,7 +423,7 @@ def test_system():
             if passed_tests >= total_tests * 0.7:
                 print(f"{Fore.YELLOW}System is mostly functional but needs attention")
             else:
-                print(f"{Fore.RED}System needs configuration")
+                print(f"{Fore.RED}System needs configuration for large dataset mode")
             success = False
 
         print(f"{Fore.CYAN}{'─' * 40}")
@@ -400,52 +438,44 @@ def test_system():
 def admin_interface():
     """Open admin interface"""
     try:
-        from app.cli.admin_cli import main as admin_main
-        admin_main()
+        from app.cli.main_cli import MainCLI
+        cli = MainCLI()
+        cli.run_admin_interface()
     except ImportError as e:
-        try:
-            from app.cli.admin_cli import AdminCLI
-            cli = AdminCLI()
-            cli.run()
-        except ImportError as e2:
-            print(f"{Fore.RED}ERROR: Admin interface not available: {e2}")
-            print(f"{Fore.YELLOW}Please make sure app/cli/admin_cli.py exists")
+        print(f"{Fore.RED}ERROR: Admin interface not available: {e}")
 
 
 def researcher_interface():
     """Open researcher interface"""
     try:
-        from app.cli.researcher_cli import main as researcher_main
-        researcher_main()
+        from app.cli.main_cli import MainCLI
+        cli = MainCLI()
+        cli.run_researcher_interface()
     except ImportError as e:
-        try:
-            from app.cli.researcher_cli import ResearcherCLI
-            cli = ResearcherCLI()
-            cli.run()
-        except ImportError as e2:
-            print(f"{Fore.RED}ERROR: Researcher interface not available: {e2}")
-            print(f"{Fore.YELLOW}Please make sure app/cli/researcher_cli.py exists")
+        print(f"{Fore.RED}ERROR: Researcher interface not available: {e}")
 
 
 def show_statistics():
-    """Show system statistics"""
+    """Show detailed system statistics"""
     try:
         from app.services.collaboration_service import CollaborationService
 
-        print(f"\n{Fore.CYAN}{'=' * 50}")
-        print(f"{Fore.YELLOW}SYSTEM STATISTICS - RELATIONSHIP TYPES")
-        print(f"{Fore.CYAN}{'=' * 50}")
+        print(f"\n{Fore.CYAN}{'=' * 60}")
+        print(f"{Fore.YELLOW}DETAILED SYSTEM STATISTICS - LARGE DATASET")
+        print(f"{Fore.CYAN}{'=' * 60}")
 
         try:
             stats = CollaborationService.get_relationship_statistics()
 
             print(f"\n{Fore.GREEN}Relationship Statistics:")
             if 'total_coauthorships' in stats:
-                print(f"{Fore.WHITE}  Co-authorships: {stats.get('total_coauthorships', 0)}")
+                print(f"{Fore.WHITE}  Co-authorships: {stats.get('total_coauthorships', 0):,}")
             if 'total_supervisions' in stats:
-                print(f"{Fore.WHITE}  Supervisions: {stats.get('total_supervisions', 0)}")
+                print(f"{Fore.WHITE}  Supervisions: {stats.get('total_supervisions', 0):,}")
             if 'total_teamworks' in stats:
-                print(f"{Fore.WHITE}  Teamwork: {stats.get('total_teamworks', 0)}")
+                print(f"{Fore.WHITE}  Teamwork: {stats.get('total_teamworks', 0):,}")
+            if 'total_researchers' in stats:
+                print(f"{Fore.WHITE}  Total Researchers: {stats.get('total_researchers', 0):,}")
 
         except Exception as e:
             print(f"{Fore.YELLOW}WARN: Could not get relationship stats: {e}")
@@ -458,6 +488,9 @@ def show_statistics():
             status = result.get('status', 'unknown')
             if status == 'connected':
                 print(f"{Fore.WHITE}  {db_name.upper()}: Connected")
+                if db_name == 'mongodb':
+                    print(f"{Fore.CYAN}    Database: {result.get('database')}")
+                    print(f"{Fore.CYAN}    Collections: {len(result.get('collections', []))}")
             elif status == 'disabled':
                 print(f"{Fore.YELLOW}  {db_name.upper()}: Disabled")
             else:
@@ -471,13 +504,36 @@ def show_statistics():
                 publication_count = mongodb.db.publications.count_documents({})
 
                 print(f"\n{Fore.GREEN}Data Counts:")
-                print(f"{Fore.WHITE}  Researchers: {researcher_count}")
-                print(f"{Fore.WHITE}  Projects: {project_count}")
-                print(f"{Fore.WHITE}  Publications: {publication_count}")
+                print(f"{Fore.WHITE}  Researchers: {researcher_count:,}")
+                print(f"{Fore.WHITE}  Projects: {project_count:,}")
+                print(f"{Fore.WHITE}  Publications: {publication_count:,}")
+
+                if researcher_count > 0:
+                    avg_projects_per_researcher = project_count / researcher_count
+                    avg_publications_per_researcher = publication_count / researcher_count
+                    print(f"\n{Fore.GREEN}Averages per Researcher:")
+                    print(f"{Fore.WHITE}  Projects: {avg_projects_per_researcher:.1f}")
+                    print(f"{Fore.WHITE}  Publications: {avg_publications_per_researcher:.1f}")
+
+            except Exception as e:
+                print(f"{Fore.YELLOW}WARN: Error calculating statistics: {e}")
+
+        if results.get('redis', {}).get('status') == 'connected':
+            from app.database.redis import redis_manager
+            try:
+                if redis_manager.is_connected():
+                    keys = redis_manager.client.keys("*")
+                    print(f"\n{Fore.GREEN}Redis Cache:")
+                    print(f"{Fore.WHITE}  Total keys: {len(keys)}")
+
+                    data_keys = sum(1 for key in keys if 'dataset' in key or 'researcher' in key)
+                    session_keys = sum(1 for key in keys if 'session' in key)
+                    print(f"{Fore.WHITE}  Data keys: {data_keys}")
+                    print(f"{Fore.WHITE}  Session keys: {session_keys}")
             except:
                 pass
 
-        print(f"{Fore.CYAN}{'=' * 50}")
+        print(f"{Fore.CYAN}{'=' * 60}")
 
     except ImportError as e:
         print(f"{Fore.RED}ERROR: Statistics service not available: {e}")
@@ -506,9 +562,74 @@ def show_statistics():
             print(f"{Fore.RED}ERROR: Cannot retrieve basic statistics")
 
 
+def show_relationships_summary():
+    """Show summary of 6 relationships in the system"""
+    try:
+        from app.services.collaboration_service import CollaborationService
+
+        print(f"\n{Fore.CYAN}{'=' * 70}")
+        print(f"{Fore.YELLOW}6 RELATIONSHIPS SUMMARY - RESEARCH COLLABORATION SYSTEM")
+        print(f"{Fore.CYAN}{'=' * 70}")
+
+        summary = CollaborationService.get_six_relationships_summary()
+
+        if not summary:
+            print(f"{Fore.RED}Cannot get relationships summary")
+            return
+
+        print(f"\n{Fore.GREEN}ENTITY COUNTS:")
+        entities = summary.get('entity_counts', {})
+        print(f"{Fore.WHITE}  Researchers: {entities.get('researchers', 0)}")
+        print(f"{Fore.WHITE}  Projects: {entities.get('projects', 0)}")
+        print(f"{Fore.WHITE}  Publications: {entities.get('publications', 0)}")
+
+        print(f"\n{Fore.GREEN}THE 6 RELATIONSHIPS:")
+        relationships = summary.get('relationships_defined', [])
+        total_rels = 0
+
+        for i, rel in enumerate(relationships, 1):
+            count = rel.get('count', 0)
+            total_rels += count
+
+            if count > 0:
+                print(f"{Fore.GREEN}  {i}. {rel['name']}: {count}")
+            else:
+                print(f"{Fore.YELLOW}  {i}. {rel['name']}: {count} (no data)")
+
+            desc = rel['description']
+            if len(desc) > 50:
+                desc = desc[:47] + "..."
+            print(f"     {desc}")
+
+        print(f"\n{Fore.GREEN}TOTAL RELATIONSHIPS: {total_rels}")
+
+        if summary.get('has_six_relationships', False):
+            print(f"\n{Fore.GREEN}✓ SYSTEM VALIDATION: Supports exactly 6 relationships")
+        else:
+            print(f"\n{Fore.RED}✗ SYSTEM VALIDATION: Does not support exactly 6 relationships")
+
+        print(f"\n{Fore.CYAN}Relationship Types:")
+        for rel in relationships:
+            name = rel['name']
+            if name in ['CO_AUTHORED_WITH', 'SUPERVISED', 'TEAMWORK_WITH']:
+                print(f"{Fore.WHITE}  • {name}: Researcher ↔ Researcher")
+            elif name in ['PARTICIPATED_IN', 'AUTHORED']:
+                print(f"{Fore.WHITE}  • {name}: Researcher → Entity")
+            elif name == 'PRODUCED':
+                print(f"{Fore.WHITE}  • {name}: Project → Publication")
+
+        print(f"{Fore.CYAN}{'=' * 70}")
+
+    except ImportError as e:
+        print(f"{Fore.RED}Error: Cannot import CollaborationService: {e}")
+        print(f"{Fore.YELLOW}Make sure collaboration_service.py has get_six_relationships_summary() method")
+    except Exception as e:
+        print(f"{Fore.RED}Error showing relationships summary: {e}")
+
+
 def initialize_databases():
     """Initialize databases"""
-    print(f"\n{Fore.YELLOW}Initializing databases...")
+    print(f"\n{Fore.YELLOW}Initializing databases for large dataset mode...")
 
     try:
         init_script = BASE_DIR / "scripts" / "simple_init.py"
@@ -517,7 +638,7 @@ def initialize_databases():
             subprocess.run([sys.executable, str(init_script)])
         else:
             print(f"{Fore.YELLOW}WARNING: Initialization script not found")
-            print(f"{Fore.CYAN}Creating basic structure...")
+            print(f"{Fore.CYAN}Creating basic structure for large dataset...")
 
             from app.database.mongodb import mongodb
             from app.database.neo4j import neo4j
@@ -531,61 +652,91 @@ def initialize_databases():
                     print(f"{Fore.GREEN}SUCCESS: Neo4j constraints created")
 
             print(f"\n{Fore.GREEN}SUCCESS: Basic database initialization completed")
+            print(f"{Fore.CYAN}Ready for large dataset: 100 researchers, 50 projects, 30 publications")
 
     except Exception as e:
         print(f"{Fore.RED}ERROR: Error initializing databases: {e}")
 
 
 def import_sample_data():
-    """Import sample data"""
-    print(f"\n{Fore.YELLOW}Importing sample data...")
+    """Import large sample data (100 researchers, 50 projects, 30 publications)"""
+    print(f"\n{Fore.YELLOW}Importing LARGE sample data...")
+    print(f"{Fore.CYAN}Target: 100 Researchers, 50 Projects, 30 Publications")
 
     try:
         sample_file = BASE_DIR / "scripts" / "sample_data.py"
 
         if sample_file.exists():
+            if not check_faker_installation():
+                print(f"{Fore.YELLOW}Faker library is required for large dataset creation")
+                install = input(f"{Fore.YELLOW}Install Faker now? (yes/no): ").strip().lower()
+                if install in ['yes', 'y']:
+                    if install_faker():
+                        print(f"{Fore.GREEN}Faker library installed successfully")
+                    else:
+                        print(f"{Fore.RED}Faker installation failed. Using limited data mode.")
+                        print(f"{Fore.YELLOW}Creating basic sample data instead...")
+                        create_basic_sample_data()
+                        return
+                else:
+                    print(f"{Fore.YELLOW}Using basic sample data mode...")
+                    create_basic_sample_data()
+                    return
+
+            print(f"{Fore.CYAN}Creating large dataset...")
+            print(f"{Fore.YELLOW}This may take a few minutes...")
             subprocess.run([sys.executable, str(sample_file)])
         else:
-            print(f"{Fore.YELLOW}WARNING: Sample data script not found")
-            print(f"{Fore.CYAN}Creating minimal sample data...")
-
-            from app.database.mongodb import mongodb
-            from app.database.neo4j import neo4j
-
-            sample_researchers = [
-                {
-                    'name': 'Dr. Ahmed Ali',
-                    'email': 'ahmed.ali@university.edu',
-                    'department': 'Computer Science',
-                    'profile_status': 'approved',
-                    'research_interests': ['AI', 'Machine Learning', 'Data Science'],
-                    'role': 'researcher'
-                },
-                {
-                    'name': 'Dr. Sara Mohamed',
-                    'email': 'sara.mohamed@university.edu',
-                    'department': 'Information Technology',
-                    'profile_status': 'approved',
-                    'research_interests': ['Networks', 'Security', 'Cloud Computing'],
-                    'role': 'researcher'
-                }
-            ]
-
-            for researcher in sample_researchers:
-                researcher_id = mongodb.create_researcher(researcher)
-                if researcher_id:
-                    neo4j.create_researcher_node({
-                        'id': researcher_id,
-                        'name': researcher['name'],
-                        'email': researcher['email'],
-                        'department': researcher['department'],
-                        'profile_status': researcher['profile_status']
-                    })
-
-            print(f"{Fore.GREEN}SUCCESS: Created 2 sample researchers")
+            print(f"{Fore.RED}ERROR: Sample data script not found at: {sample_file}")
+            print(f"{Fore.YELLOW}Creating minimal sample data as fallback...")
+            create_basic_sample_data()
 
     except Exception as e:
         print(f"{Fore.RED}ERROR: Error importing sample data: {e}")
+        print(f"{Fore.YELLOW}Please check if Faker library is installed: pip install Faker")
+
+
+def create_basic_sample_data():
+    """Create basic sample data when Faker is not available"""
+    try:
+        from app.database.mongodb import mongodb
+        from app.database.neo4j import neo4j
+
+        sample_researchers = [
+            {
+                'name': 'Dr. Ahmed Ali',
+                'email': 'ahmed.ali@university.edu',
+                'department': 'Computer Science',
+                'profile_status': 'approved',
+                'research_interests': ['AI', 'Machine Learning', 'Data Science'],
+                'role': 'researcher'
+            },
+            {
+                'name': 'Dr. Sara Mohamed',
+                'email': 'sara.mohamed@university.edu',
+                'department': 'Information Technology',
+                'profile_status': 'approved',
+                'research_interests': ['Networks', 'Security', 'Cloud Computing'],
+                'role': 'researcher'
+            }
+        ]
+
+        for researcher in sample_researchers:
+            researcher_id = mongodb.create_researcher(researcher)
+            if researcher_id:
+                neo4j.create_researcher_node({
+                    'id': researcher_id,
+                    'name': researcher['name'],
+                    'email': researcher['email'],
+                    'department': researcher['department'],
+                    'profile_status': researcher['profile_status']
+                })
+
+        print(f"{Fore.GREEN}SUCCESS: Created 2 sample researchers (basic mode)")
+        print(f"{Fore.YELLOW}For large dataset (100 researchers), install Faker: pip install Faker")
+
+    except Exception as e:
+        print(f"{Fore.RED}ERROR: Error creating basic sample data: {e}")
 
 
 def backup_system():
@@ -604,8 +755,9 @@ def backup_system():
 
         backup_data = {
             'timestamp': timestamp,
-            'system': 'Research Collaboration System',
+            'system': 'Research Collaboration System - Large Dataset Mode',
             'backup_type': 'configuration',
+            'dataset_size': 'large (100 researchers, 50 projects, 30 publications)',
             'relationship_types': ['CO_AUTHORED_WITH', 'SUPERVISED', 'TEAMWORK_WITH', 'PARTICIPATED_IN']
         }
 
@@ -614,6 +766,7 @@ def backup_system():
 
         print(f"{Fore.GREEN}SUCCESS: Backup created: {backup_file.name}")
         print(f"{Fore.CYAN}Location: {backup_file}")
+        print(f"{Fore.YELLOW}Dataset Mode: Large (100 researchers, 50 projects, 30 publications)")
 
     except Exception as e:
         print(f"{Fore.RED}ERROR: Error creating backup: {e}")
@@ -621,24 +774,51 @@ def backup_system():
 
 def cleanup_system():
     """Clean up test data"""
-    print(f"\n{Fore.YELLOW}Cleaning up test data...")
+    print(f"\n{Fore.RED}{'=' * 60}")
+    print(f"{Fore.YELLOW} CLEANING ALL DATA - INCLUDING LARGE DATASET")
+    print(f"{Fore.RED}{'=' * 60}")
 
     try:
         from app.database.mongodb import mongodb
 
-        confirm = input(f"{Fore.RED}WARNING: Delete ALL test data? (yes/no): ").strip().lower()
+        confirm = input(f"{Fore.RED}WARNING: Delete ALL data including large dataset? (type 'DELETE_ALL'): ").strip()
 
-        if confirm in ['yes', 'y']:
+        if confirm == 'DELETE_ALL':
             if mongodb.client:
-                mongodb.db.researchers.delete_many({
-                    'email': {'$regex': 'test', '$options': 'i'}
-                })
+                collections = ['researchers', 'projects', 'publications', 'logs']
+                total_deleted = 0
 
-                mongodb.db.projects.delete_many({
-                    'title': {'$regex': 'test', '$options': 'i'}
-                })
+                for collection in collections:
+                    if collection in mongodb.db.list_collection_names():
+                        result = mongodb.db[collection].delete_many({})
+                        deleted = result.deleted_count
+                        total_deleted += deleted
+                        print(f"{Fore.YELLOW}   Deleted {deleted} documents from {collection}")
 
-                print(f"{Fore.GREEN}SUCCESS: Test data cleaned up")
+                print(f"{Fore.GREEN}SUCCESS: Total {total_deleted} documents cleaned up")
+
+                try:
+                    from app.database.neo4j import neo4j
+                    if neo4j.driver:
+                        with neo4j.driver.session() as session:
+                            result = session.run("MATCH (n) DETACH DELETE n RETURN count(n) as deleted")
+                            deleted_nodes = result.single()["deleted"]
+                            print(f"{Fore.YELLOW}   Deleted {deleted_nodes} nodes from Neo4j")
+                except:
+                    pass
+
+                try:
+                    from app.database.redis import redis_manager
+                    if redis_manager.is_connected():
+                        keys = redis_manager.client.keys("*")
+                        if keys:
+                            redis_manager.client.delete(*keys)
+                            print(f"{Fore.YELLOW}   Deleted {len(keys)} keys from Redis")
+                except:
+                    pass
+
+                print(f"\n{Fore.GREEN}ALL DATA CLEANED SUCCESSFULLY!")
+                print(f"{Fore.CYAN}You can now create a new large dataset using option 7")
             else:
                 print(f"{Fore.RED}ERROR: MongoDB not connected")
         else:
@@ -648,86 +828,13 @@ def cleanup_system():
         print(f"{Fore.RED}ERROR: Error cleaning up: {e}")
 
 
-def redis_tools():
-    """Redis tools"""
-    print(f"\n{Fore.CYAN}{'=' * 50}")
-    print(f"{Fore.YELLOW}REDIS TOOLS")
-    print(f"{Fore.CYAN}{'=' * 50}")
-
-    print(f"\n{Fore.GREEN}[1]{Fore.WHITE} Test Redis Connection")
-    print(f"{Fore.GREEN}[2]{Fore.WHITE} Fix Redis Configuration")
-    print(f"{Fore.GREEN}[3]{Fore.WHITE} Setup Local Redis")
-    print(f"{Fore.GREEN}[4]{Fore.WHITE} View Redis Status")
-    print(f"{Fore.GREEN}[5]{Fore.WHITE} Back to Main Menu")
-
-    try:
-        choice = input(f"\n{Fore.YELLOW}Select option: ").strip()
-
-        if choice == '1':
-            subprocess.run([sys.executable, "redis_fix.py"])
-        elif choice == '2':
-            check_redis_config()
-        elif choice == '3':
-            print(f"\n{Fore.YELLOW}Setting up local Redis...")
-            try:
-                subprocess.run(["docker", "--version"], capture_output=True)
-                subprocess.run([
-                    "docker", "run", "-d",
-                    "--name", "research-redis-local",
-                    "-p", "6379:6379",
-                    "redis:alpine"
-                ])
-
-                env_file = BASE_DIR / ".env"
-                if env_file.exists():
-                    with open(env_file, 'r') as f:
-                        content = f.read()
-
-                    lines = content.split('\n')
-                    new_lines = []
-                    for line in lines:
-                        if line.startswith('REDIS_'):
-                            continue
-                        new_lines.append(line)
-
-                    new_lines.append("\n# Local Redis Configuration")
-                    new_lines.append("REDIS_HOST=localhost")
-                    new_lines.append("REDIS_PORT=6379")
-                    new_lines.append("REDIS_PASSWORD=")
-                    new_lines.append("REDIS_USERNAME=")
-                    new_lines.append("REDIS_SSL=False")
-
-                    with open(env_file, 'w') as f:
-                        f.write('\n'.join(new_lines))
-
-                    print(f"{Fore.GREEN}SUCCESS: Local Redis configured")
-                    print(f"{Fore.CYAN}Redis available at: localhost:6379")
-
-            except Exception as e:
-                print(f"{Fore.RED}ERROR: {e}")
-                print(f"{Fore.YELLOW}Docker might not be installed")
-        elif choice == '4':
-            from app.database import redis_manager
-            stats = redis_manager.get_system_stats()
-            print(f"\n{Fore.CYAN}Redis Status: {stats.get('status', 'unknown')}")
-            if stats.get('status') == 'connected':
-                print(f"{Fore.GREEN}Version: {stats.get('version', 'N/A')}")
-                print(f"Memory: {stats.get('memory_used', 'N/A')}")
-                print(f"Keys: {stats.get('total_keys', 0)}")
-        elif choice == '5':
-            return
-
-    except Exception as e:
-        print(f"{Fore.RED}ERROR: Error in Redis tools: {e}")
-
-
 def interactive_menu():
     """Interactive main menu"""
     while True:
         display_banner()
 
         try:
-            choice = input(f"\n{Fore.YELLOW}Enter your choice (0-9, r): {Fore.WHITE}").strip().lower()
+            choice = input(f"\n{Fore.YELLOW}Enter your choice (0-9, R): {Fore.WHITE}").strip().lower()
 
             if choice == '1':
                 setup_system()
@@ -748,13 +855,16 @@ def interactive_menu():
             elif choice == '9':
                 cleanup_system()
             elif choice == 'r':
-                redis_tools()
+                show_relationships_summary()
             elif choice == '0':
                 print(f"\n{Fore.GREEN}Thank you for using Research Collaboration System!")
+                print(f"{Fore.CYAN}Large Dataset Mode: 100 Researchers, 50 Projects, 30 Publications")
+                print(f"{Fore.CYAN}6 Relationships: CO_AUTHORED_WITH, SUPERVISED, TEAMWORK_WITH,")
+                print(f"{Fore.CYAN}                PARTICIPATED_IN, AUTHORED, PRODUCED")
                 print(f"{Fore.CYAN}Goodbye!")
                 break
             else:
-                print(f"{Fore.RED}ERROR: Invalid choice. Please enter a number between 0-9 or 'r'.")
+                print(f"{Fore.RED}ERROR: Invalid choice. Please enter a number between 0-9 or 'R'.")
 
             input(f"\n{Fore.CYAN}Press Enter to continue...")
 
@@ -784,12 +894,14 @@ def command_line_mode():
             initialize_databases()
         elif command == 'sample-data' or command == '7':
             import_sample_data()
+        elif command == 'large-data' or command == 'large':
+            import_sample_data()
         elif command == 'backup' or command == '8':
             backup_system()
         elif command == 'cleanup' or command == '9':
             cleanup_system()
-        elif command == 'redis' or command == 'r':
-            redis_tools()
+        elif command == 'relationships' or command == 'r':
+            show_relationships_summary()
         elif command == 'help' or command == '--help' or command == '-h':
             display_banner()
         else:
@@ -799,7 +911,9 @@ def command_line_mode():
             print(f"{Fore.CYAN}  python run.py test         {Fore.WHITE}- Test connections")
             print(f"{Fore.CYAN}  python run.py admin        {Fore.WHITE}- Admin interface")
             print(f"{Fore.CYAN}  python run.py researcher   {Fore.WHITE}- Researcher interface")
-            print(f"{Fore.CYAN}  python run.py redis        {Fore.WHITE}- Redis tools")
+            print(f"{Fore.CYAN}  python run.py stats        {Fore.WHITE}- View statistics")
+            print(f"{Fore.CYAN}  python run.py relationships {Fore.WHITE}- Show 6 relationships")
+            print(f"{Fore.CYAN}  python run.py large-data   {Fore.WHITE}- Create large dataset")
             print(f"{Fore.CYAN}  python run.py help         {Fore.WHITE}- Show this help")
     else:
         interactive_menu()
@@ -808,7 +922,9 @@ def command_line_mode():
 def main():
     """Main function"""
     try:
-        print(f"\n{Fore.CYAN}Starting Research Collaboration System...")
+        print(f"\n{Fore.CYAN}Starting Research Collaboration System - LARGE DATASET MODE...")
+        print(f"{Fore.YELLOW}Target: 100 Researchers, 50 Projects, 30 Publications")
+        print(f"{Fore.YELLOW}Relationships: 6 defined relationships")
 
         env_file = BASE_DIR / '.env'
         if not env_file.exists():
@@ -818,6 +934,7 @@ def main():
             example_env = BASE_DIR / '.env.example'
             with open(example_env, 'w') as f:
                 f.write("""# Research Collaboration System - Environment Variables
+# LARGE DATASET MODE: 100 researchers, 50 projects, 30 publications
 
 # MongoDB Configuration
 MONGODB_URI=mongodb://localhost:27017
@@ -839,10 +956,14 @@ REDIS_SSL=False
 SECRET_KEY=your-secret-key-here-change-this
 DEBUG=True
 LOG_LEVEL=INFO
+
+# Large Dataset Settings
+DATASET_SIZE=large
 """)
 
             print(f"{Fore.GREEN}SUCCESS: Created .env.example file")
             print(f"{Fore.YELLOW}Please copy .env.example to .env and update the values")
+            print(f"{Fore.CYAN}Then run: python run.py setup")
             return
 
         command_line_mode()
@@ -860,7 +981,9 @@ LOG_LEVEL=INFO
             pass
 
         print(f"\n{Fore.CYAN}{'=' * 70}")
-        print(f"{Fore.GREEN}Research Collaboration System - Session Ended")
+        print(f"{Fore.GREEN}Research Collaboration System - LARGE DATASET MODE Ended")
+        print(f"{Fore.CYAN}6 Relationships: CO_AUTHORED_WITH, SUPERVISED, TEAMWORK_WITH,")
+        print(f"{Fore.CYAN}                PARTICIPATED_IN, AUTHORED, PRODUCED")
         print(f"{Fore.CYAN}{'=' * 70}")
 
 

@@ -9,18 +9,13 @@ from app.models.collaboration import CollaborationType
 
 
 class PublicationService:
-    """Service for managing research publications"""
-
     @staticmethod
     def create_publication(creator_id: str, publication_data: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
-        """Create a new publication"""
-        # Validate required fields
         required_fields = ['title', 'authors', 'year']
         for field in required_fields:
             if field not in publication_data or not publication_data[field]:
                 return False, None, f"Missing required field: {field}"
 
-        # Verify creator is in authors list
         creator_in_authors = False
         authors_list = []
 
@@ -34,7 +29,6 @@ class PublicationService:
             if author_data['researcher_id'] == creator_id:
                 creator_in_authors = True
 
-            # Create author object
             author = Author(
                 researcher_id=author_data['researcher_id'],
                 name=author_data['name'],
@@ -47,45 +41,46 @@ class PublicationService:
         if not creator_in_authors:
             return False, None, "Creator must be one of the authors"
 
-        # Replace authors list
         publication_data['authors'] = authors_list
 
-        # Set default values
         publication_data.setdefault('status', 'published')
         publication_data.setdefault('keywords', [])
         publication_data.setdefault('related_projects', [])
 
-        # Create publication object and validate
         publication = Publication(**publication_data)
         errors = publication.validate()
 
         if errors:
             return False, None, "; ".join(errors)
 
-        # Save to MongoDB
         publication_dict = publication.to_dict()
         publication_id = mongodb.create_publication(publication_dict)
 
         if not publication_id:
             return False, None, "Failed to create publication"
 
-        # Update researchers by adding publication
         for author in authors_list:
             mongodb.update_researcher(author.researcher_id, {
                 '$push': {'publications': publication_id}
             })
 
-        # Create co-authorship relationships in Neo4j
         author_ids = [author.researcher_id for author in authors_list]
-        neo4j.create_coauthorship(publication_id, author_ids)
+        for j in range(len(author_ids)):
+            for k in range(j + 1, len(author_ids)):
+                researcher1_id = author_ids[j]
+                researcher2_id = author_ids[k]
+                neo4j.create_coauthorship(researcher1_id, researcher2_id, publication_id)
 
-        # Update related projects
+        for i, author_id in enumerate(author_ids, 1):
+            neo4j.create_authorship(author_id, publication_id, i)
+
         for project_id in publication_data['related_projects']:
             mongodb.update_project(project_id, {
                 '$push': {'related_publications': publication_id}
             })
 
-        # Log activity
+            neo4j.create_produced_relationship(project_id, publication_id)
+
         redis_manager.track_activity(creator_id, 'create_publication', {
             'publication_id': publication_id,
             'publication_title': publication.title,
@@ -96,14 +91,11 @@ class PublicationService:
 
     @staticmethod
     def get_publication_details(publication_id: str) -> Optional[Dict[str, Any]]:
-        """Get publication details"""
-        # Try to get from cache
         cache_key = f"publication_details:{publication_id}"
         cached = redis_manager.cache_get(cache_key)
         if cached:
             return cached
 
-        # Search in MongoDB
         publication_cursor = mongodb.db.publications.find_one({'_id': ObjectId(publication_id)})
 
         if not publication_cursor:
@@ -112,7 +104,6 @@ class PublicationService:
         publication_data = publication_cursor
         publication_data['_id'] = str(publication_data['_id'])
 
-        # Get complete author details
         authors_details = []
         for author in publication_data.get('authors', []):
             if isinstance(author, dict):
@@ -120,18 +111,29 @@ class PublicationService:
                 if researcher_id:
                     researcher_data = mongodb.get_researcher(researcher_id)
                     if researcher_data:
+                        author_order = author.get('order', 1)
+
+                        with neo4j.driver.session() as session:
+                            result = session.run("""
+                                MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                                RETURN rel.author_order as neo4j_order
+                            """, researcher_id=researcher_id, publication_id=publication_id)
+
+                            record = result.single()
+                            if record and record['neo4j_order']:
+                                author_order = record['neo4j_order']
+
                         author_details = {
                             'id': researcher_id,
                             'name': researcher_data['name'],
                             'email': researcher_data['email'],
                             'department': researcher_data['department'],
-                            'order': author.get('order', 1),
+                            'order': author_order,
                             'affiliation': author.get('affiliation', ''),
                             'contribution': author.get('contribution', '')
                         }
                         authors_details.append(author_details)
 
-        # Get related projects data
         projects_details = []
         for project_id in publication_data.get('related_projects', []):
             project_data = mongodb.get_project(project_id)
@@ -142,43 +144,80 @@ class PublicationService:
                     'status': project_data.get('status', 'unknown')
                 })
 
-        # Build complete details
+        coauthors_info = []
+        with neo4j.driver.session() as session:
+            result = session.run("""
+                MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                WHERE $publication_id IN rel.publications
+                RETURN r1.id as researcher1_id, r2.id as researcher2_id, rel.collaboration_count as collaboration_count
+            """, publication_id=publication_id)
+
+            for record in result:
+                coauthors_info.append({
+                    'researcher1_id': record['researcher1_id'],
+                    'researcher2_id': record['researcher2_id'],
+                    'collaboration_count': record['collaboration_count']
+                })
+
+        produced_by = []
+        with neo4j.driver.session() as session:
+            result = session.run("""
+                MATCH (p:Project)-[rel:PRODUCED]->(pub:Publication {id: $publication_id})
+                RETURN p.id as project_id
+            """, publication_id=publication_id)
+
+            for record in result:
+                produced_by.append(record['project_id'])
+
         publication_details = {
             'publication_info': publication_data,
             'authors': authors_details,
             'projects': projects_details,
+            'coauthors_info': coauthors_info,
+            'produced_by': produced_by,
             'citation_apa': Publication(**publication_data).get_citation('apa'),
             'citation_mla': Publication(**publication_data).get_citation('mla')
         }
 
-        # Store in cache for 10 minutes
         redis_manager.cache_set(cache_key, publication_details, 600)
 
         return publication_details
 
     @staticmethod
     def get_publications_by_researcher(researcher_id: str, year: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get researcher's publications"""
-        # Build query
         query = {'authors.researcher_id': researcher_id}
         if year:
             query['year'] = year
 
-        # Search in MongoDB
         publications_cursor = mongodb.db.publications.find(query).sort('year', -1)
         publications = []
 
         for pub in publications_cursor:
             pub['_id'] = str(pub['_id'])
-
-            # Add author count
             pub['authors_count'] = len(pub.get('authors', []))
 
-            # Add authorship role (main author or co-author)
+            author_order = None
             for author in pub.get('authors', []):
                 if isinstance(author, dict) and author.get('researcher_id') == researcher_id:
-                    pub['author_role'] = 'first_author' if author.get('order', 99) == 1 else 'co_author'
+                    author_order = author.get('order', 99)
                     break
+
+            with neo4j.driver.session() as session:
+                result = session.run("""
+                    MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                    RETURN rel.author_order as neo4j_order
+                """, researcher_id=researcher_id, publication_id=str(pub['_id']))
+
+                record = result.single()
+                if record and record['neo4j_order']:
+                    author_order = record['neo4j_order']
+
+            if author_order == 1:
+                pub['author_role'] = 'first_author'
+            elif author_order:
+                pub['author_role'] = f'co_author_{author_order}'
+            else:
+                pub['author_role'] = 'co_author'
 
             publications.append(pub)
 
@@ -186,11 +225,9 @@ class PublicationService:
 
     @staticmethod
     def search_publications(query: str, filters: Optional[Dict] = None, limit: int = 20) -> List[Dict[str, Any]]:
-        """Search for publications"""
         if not filters:
             filters = {}
 
-        # Build search query
         search_query = {}
 
         if query:
@@ -201,7 +238,6 @@ class PublicationService:
                 {'journal': {'$regex': query, '$options': 'i'}}
             ]
 
-        # Add filters
         if 'year_from' in filters:
             search_query['year'] = {'$gte': filters['year_from']}
 
@@ -216,7 +252,6 @@ class PublicationService:
         if 'status' in filters:
             search_query['status'] = filters['status']
 
-        # Search
         publications_cursor = mongodb.db.publications.find(search_query).sort('year', -1).limit(limit)
         publications = []
 
@@ -228,8 +263,36 @@ class PublicationService:
         return publications
 
     @staticmethod
+    def get_researcher_authored_publications(researcher_id: str) -> List[Dict[str, Any]]:
+        try:
+            with neo4j.driver.session() as session:
+                result = session.run("""
+                    MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication)
+                    RETURN pub.id as publication_id, rel.author_order as author_order
+                    ORDER BY rel.author_order
+                """, researcher_id=researcher_id)
+
+                publication_ids = []
+                for record in result:
+                    publication_ids.append(record['publication_id'])
+
+                if not publication_ids:
+                    return []
+
+                publications = []
+                for pub_id in publication_ids:
+                    pub_data = mongodb.db.publications.find_one({'_id': ObjectId(pub_id)})
+                    if pub_data:
+                        pub_data['_id'] = str(pub_data['_id'])
+                        publications.append(pub_data)
+
+                return publications
+        except Exception as e:
+            print(f"Error getting authored publications: {e}")
+            return []
+
+    @staticmethod
     def update_publication_citation(publication_id: str, increment: bool = True) -> bool:
-        """Update citation count"""
         try:
             if increment:
                 mongodb.db.publications.update_one(
@@ -247,7 +310,6 @@ class PublicationService:
 
     @staticmethod
     def track_publication_view(publication_id: str) -> bool:
-        """Track publication view"""
         try:
             mongodb.db.publications.update_one(
                 {'_id': ObjectId(publication_id)},
@@ -256,3 +318,53 @@ class PublicationService:
             return True
         except:
             return False
+
+    @staticmethod
+    def delete_publication(publication_id: str, deleter_id: str) -> Tuple[bool, str]:
+        try:
+            publication_data = mongodb.db.publications.find_one({'_id': ObjectId(publication_id)})
+            if not publication_data:
+                return False, "Publication not found"
+
+            with neo4j.driver.session() as session:
+                session.run("""
+                    MATCH ()-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                    DELETE rel
+                """, publication_id=publication_id)
+
+                session.run("""
+                    MATCH ()-[rel:PRODUCED]->(pub:Publication {id: $publication_id})
+                    DELETE rel
+                """, publication_id=publication_id)
+
+                session.run("""
+                    MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                    WHERE $publication_id IN rel.publications
+                    SET rel.publications = [pub_id IN rel.publications WHERE pub_id <> $publication_id]
+                """, publication_id=publication_id)
+
+            result = mongodb.db.publications.delete_one({'_id': ObjectId(publication_id)})
+
+            if result.deleted_count > 0:
+                for author in publication_data.get('authors', []):
+                    if isinstance(author, dict):
+                        researcher_id = author.get('researcher_id')
+                        if researcher_id:
+                            mongodb.update_researcher(researcher_id, {
+                                '$pull': {'publications': publication_id}
+                            })
+
+                redis_manager.track_activity(deleter_id, 'delete_publication', {
+                    'publication_id': publication_id,
+                    'publication_title': publication_data.get('title', 'Unknown'),
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+
+                redis_manager.cache_delete(f"publication_details:{publication_id}")
+
+                return True, "Publication deleted successfully"
+            else:
+                return False, "Failed to delete publication"
+        except Exception as e:
+            print(f"Error deleting publication: {e}")
+            return False, f"Error deleting publication: {e}"

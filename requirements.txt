@@ -19,3 +19,5 @@ pytest==7.4.3
 black==23.12.1
 flake8==7.0.0
 PyJWT==2.8.0
+Faker==19.6.1
+time

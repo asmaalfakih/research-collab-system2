@@ -26,7 +26,6 @@ def print_step(step_num, description):
     print(f"{Fore.CYAN}{'-' * 50}")
 
 
-# Step 1: Initialize MongoDB
 print_step("1", "Initializing MongoDB Database")
 try:
     from pymongo import MongoClient, ASCENDING, DESCENDING
@@ -39,19 +38,17 @@ try:
 
     print(f"{Fore.WHITE}   Database: {db.name}")
 
-    # Create collections if they don't exist
     collections = ['researchers', 'projects', 'publications', 'admins', 'logs']
     for collection in collections:
         if collection not in db.list_collection_names():
             db.create_collection(collection)
             print(f"{Fore.GREEN}   Created collection: {collection}")
 
-    # Create indexes
     db.researchers.create_index([('email', ASCENDING)], unique=True, name='email_unique')
     db.researchers.create_index([('profile_status', ASCENDING)], name='status_idx')
+    db.admins.create_index([('email', ASCENDING)], unique=True, name='admin_email_unique')
     print(f"{Fore.GREEN}   Created indexes")
 
-    # Create admin user
     admin_password = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     admin_data = {
         'name': 'System Admin',
@@ -63,23 +60,23 @@ try:
         'research_interests': ['System Management'],
         'created_at': datetime.utcnow(),
         'updated_at': datetime.utcnow(),
-        'login_count': 0
+        'login_count': 0,
+        'permissions': ['manage_users', 'approve_profiles', 'view_analytics', 'manage_system'],
+        'admin_level': 'super_admin'
     }
 
-    # Check if admin exists
-    existing = db.researchers.find_one({'email': 'admin@university.edu'})
+    existing = db.admins.find_one({'email': 'admin@university.edu'})
     if not existing:
-        db.researchers.insert_one(admin_data)
-        print(f"{Fore.GREEN}   Created admin: admin@university.edu / admin123")
+        db.admins.insert_one(admin_data)
+        print(f"{Fore.GREEN}   Created admin in admins collection: admin@university.edu / admin123")
     else:
-        print(f"{Fore.YELLOW}   Admin already exists")
+        print(f"{Fore.YELLOW}   Admin already exists in admins collection")
 
     print(f"{Fore.GREEN} MongoDB initialization completed")
 
 except Exception as e:
     print(f"{Fore.RED} MongoDB Error: {e}")
 
-# Step 2: Initialize Neo4j
 print_step("2", "Initializing Neo4j Graph Database")
 try:
     from neo4j import GraphDatabase
@@ -93,10 +90,10 @@ try:
     )
 
     with driver.session() as session:
-        # Create constraints
         constraints = [
             "CREATE CONSTRAINT researcher_id_unique IF NOT EXISTS FOR (r:Researcher) REQUIRE r.id IS UNIQUE",
-            "CREATE CONSTRAINT researcher_email_unique IF NOT EXISTS FOR (r:Researcher) REQUIRE r.email IS UNIQUE"
+            "CREATE CONSTRAINT researcher_email_unique IF NOT EXISTS FOR (r:Researcher) REQUIRE r.email IS UNIQUE",
+            "CREATE CONSTRAINT admin_email_unique IF NOT EXISTS FOR (a:Admin) REQUIRE a.email IS UNIQUE"
         ]
 
         for constraint in constraints:
@@ -106,21 +103,20 @@ try:
             except Exception as e:
                 print(f"{Fore.YELLOW}   Constraint may already exist: {e}")
 
-        # Create admin node
         result = session.run("""
-            MERGE (r:Researcher {email: $email})
-            SET r.id = $id,
-                r.name = $name,
-                r.department = $department,
-                r.profile_status = $status,
-                r.created_at = datetime()
-            RETURN r.name
+            MERGE (a:Admin {email: $email})
+            SET a.id = $id,
+                a.name = $name,
+                a.department = $department,
+                a.role = $role,
+                a.created_at = datetime()
+            RETURN a.name
         """, {
             'email': 'admin@university.edu',
             'id': 'admin_001',
             'name': 'System Admin',
             'department': 'Administration',
-            'status': 'approved'
+            'role': 'admin'
         })
 
         if result.single():
@@ -132,7 +128,6 @@ try:
 except Exception as e:
     print(f"{Fore.RED} Neo4j Error: {e}")
 
-# Step 3: Initialize Redis
 print_step("3", "Initializing Redis Cache")
 try:
     import redis
@@ -149,7 +144,6 @@ try:
     )
 
     if r.ping():
-        # Set system info
         r.set("system:name", "Research Collaboration System")
         r.set("system:initialized", datetime.utcnow().isoformat())
         r.set("system:version", "1.0.0")
