@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Create sample researchers for testing"""
 
 from app.database.mongodb import mongodb
 from app.models.researcher import Researcher
@@ -7,7 +5,6 @@ from app.database.neo4j import neo4j
 
 print("Creating sample researchers...")
 
-# First researcher
 researcher1_data = {
     'name': 'Dr. Test Researcher 1',
     'email': 'test.researcher1@university.edu',
@@ -18,7 +15,6 @@ researcher1_data = {
     'research_interests': ['AI', 'Machine Learning']
 }
 
-# Second researcher
 researcher2_data = {
     'name': 'Dr. Test Researcher 2',
     'email': 'test.researcher2@university.edu',
@@ -29,14 +25,12 @@ researcher2_data = {
     'research_interests': ['Networks', 'Security']
 }
 
-# Create in MongoDB
 researcher1_id = mongodb.create_researcher(researcher1_data)
 researcher2_id = mongodb.create_researcher(researcher2_data)
 
 print(f"Created researcher 1: {researcher1_id}")
 print(f"Created researcher 2: {researcher2_id}")
 
-# Create in Neo4j
 neo4j.create_researcher_node({
     'id': researcher1_id,
     'name': researcher1_data['name'],
@@ -55,7 +49,6 @@ neo4j.create_researcher_node({
 
 print("Researchers created in Neo4j")
 
-# Create collaboration relationship between them
 count = neo4j.create_or_update_collaboration(
     researcher1_id,
     researcher2_id,
@@ -64,7 +57,6 @@ count = neo4j.create_or_update_collaboration(
 
 print(f"Collaboration created. Count: {count}")
 
-# Test relationship
 collaborators = neo4j.get_researcher_collaborators(researcher1_id)
 print(f"Collaborators for researcher 1: {len(collaborators)}")
 

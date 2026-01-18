@@ -3,14 +3,11 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project path to sys.path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 load_dotenv()
 
-
 class DatabaseConfig:
-    """Database settings from .env file"""
 
     @staticmethod
     def get_mongodb_config():

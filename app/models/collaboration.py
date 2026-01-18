@@ -2,13 +2,11 @@ from datetime import datetime
 from typing import Dict, Any, List
 from enum import Enum
 
-
 class CollaborationType(Enum):
     CO_AUTHORSHIP = "co_authorship"
     SUPERVISION = "supervision"
     TEAMWORK = "teamwork"
     PROJECT_PARTICIPATION = "project_participation"
-
 
 class Collaboration:
     def __init__(self, **kwargs):

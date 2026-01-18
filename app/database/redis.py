@@ -6,9 +6,7 @@ from typing import Optional, Dict, List, Any, Union
 from .connection import DatabaseConfig
 from colorama import Fore, Style
 
-
 class RedisManager:
-    """Redis Operations Manager - Caching and Sessions (updated version)"""
 
     _instance = None
 
@@ -19,7 +17,6 @@ class RedisManager:
         return cls._instance
 
     def _init_redis(self):
-        """Create Redis connection with simplified SSL support"""
         config = DatabaseConfig.get_redis_config()
 
         print(f"CONNECT: Attempting Redis connection to {config['host']}:{config['port']}")
@@ -78,18 +75,15 @@ class RedisManager:
             self._disable_redis()
 
     def _disable_redis(self):
-        """Temporarily disable Redis to continue without cache"""
         print(f"{Fore.YELLOW}WARN: Redis cache is DISABLED for this session")
         print("TIP: System will work but without caching features")
         print("TIP: Basic functionality will still work")
         self.client = None
 
     def is_connected(self):
-        """Check connection"""
         return self.client is not None and self.client.ping()
 
     def create_session(self, user_id: str, user_data: Dict, ttl_hours: int = 24) -> Optional[str]:
-        """Create new session"""
         if not self.is_connected():
             print(f"{Fore.YELLOW}WARN: Redis not connected - session not created")
             return None
@@ -121,7 +115,6 @@ class RedisManager:
             return None
 
     def get_session(self, session_id: str) -> Optional[Dict]:
-        """Get session data"""
         if not self.is_connected():
             return None
 
@@ -150,7 +143,6 @@ class RedisManager:
             return None
 
     def delete_session(self, session_id: str) -> bool:
-        """Delete session"""
         if not self.is_connected():
             return False
 
@@ -162,7 +154,6 @@ class RedisManager:
             return False
 
     def cache_get(self, key: str) -> Optional[Any]:
-        """Get data from cache"""
         if not self.is_connected():
             return None
 
@@ -179,7 +170,6 @@ class RedisManager:
             return None
 
     def cache_set(self, key: str, value: Any, ttl_seconds: int = 300) -> bool:
-        """Save data to cache"""
         if not self.is_connected():
             return False
 
@@ -221,14 +211,12 @@ class RedisManager:
             return False
 
     def cache_delete(self, key: str) -> bool:
-        """Delete from cache"""
         if not self.is_connected():
             return False
 
         return bool(self.client.delete(key))
 
     def track_activity(self, user_id: str, action: str, metadata: Dict = None) -> bool:
-        """Track user activity (without Redis if disabled)"""
         if not self.is_connected():
             print(f"ACTIVITY (no Redis): {user_id} - {action}")
             return False
@@ -250,7 +238,6 @@ class RedisManager:
             return False
 
     def get_recent_activities(self, limit: int = 20) -> List[Dict]:
-        """Get recent activities"""
         if not self.is_connected():
             return []
 
@@ -268,7 +255,6 @@ class RedisManager:
             return []
 
     def get_system_stats(self) -> Dict:
-        """Get system statistics"""
         if not self.is_connected():
             return {
                 'status': 'disabled',
@@ -292,13 +278,11 @@ class RedisManager:
             return {'status': 'error', 'message': str(e)}
 
     def close(self):
-        """Close connection"""
         if self.client:
             try:
                 self.client.close()
                 print("Redis connection closed")
             except:
                 pass
-
 
 redis_manager = RedisManager()

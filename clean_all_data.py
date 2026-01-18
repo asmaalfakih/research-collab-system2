@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Clean all data from all databases
-"""
 
 import sys
 import os
@@ -29,7 +25,6 @@ if confirm != 'DELETE_ALL':
 
 print(f"\n{Fore.YELLOW} Cleaning data...")
 
-# Clean MongoDB
 print(f"\n{Fore.YELLOW}1. Cleaning MongoDB...")
 try:
     from pymongo import MongoClient
@@ -51,7 +46,6 @@ try:
 except Exception as e:
     print(f"{Fore.RED} MongoDB error: {e}")
 
-# Clean Neo4j
 print(f"\n{Fore.YELLOW}2. Cleaning Neo4j...")
 try:
     from neo4j import GraphDatabase
@@ -75,7 +69,6 @@ try:
 except Exception as e:
     print(f"{Fore.RED} Neo4j error: {e}")
 
-# Clean Redis
 print(f"\n{Fore.YELLOW}3. Cleaning Redis...")
 try:
     import redis

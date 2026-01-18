@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Create large sample data for testing
-"""
 
 import sys
 import os
@@ -21,14 +17,11 @@ init(autoreset=True)
 
 fake = Faker()
 
-
 def get_utc_now():
     return datetime.utcnow()
 
-
 def generate_random_password():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-
 
 def generate_researcher_data(count=100):
     departments = [
@@ -73,7 +66,6 @@ def generate_researcher_data(count=100):
         researchers.append(researcher)
 
     return researchers
-
 
 def generate_project_data(count=50, researcher_ids=[]):
     project_titles = [
@@ -139,7 +131,6 @@ def generate_project_data(count=50, researcher_ids=[]):
 
     return projects
 
-
 def generate_publication_data(count=30, researcher_ids=[]):
     journals = [
         'Journal of Computer Science', 'IEEE Transactions',
@@ -189,7 +180,6 @@ def generate_publication_data(count=30, researcher_ids=[]):
 
     return publications
 
-
 def create_diverse_relationships(researcher_ids, project_ids, publication_ids):
     relationships_created = {
         'SUPERVISED': 0,
@@ -200,16 +190,18 @@ def create_diverse_relationships(researcher_ids, project_ids, publication_ids):
         'PARTICIPATED_IN': 0
     }
 
-    for project_id in project_ids:
+    for _ in range(min(30, len(researcher_ids))):
         supervisor_id = random.choice(researcher_ids)
-        if neo4j.create_project_supervision(supervisor_id, project_id):
-            relationships_created['SUPERVISED'] += 1
+        student_id = random.choice(researcher_ids)
+        if supervisor_id != student_id:
+            if neo4j.create_supervision(supervisor_id, student_id):
+                relationships_created['SUPERVISED'] += 1
 
-        participants = random.sample(researcher_ids, random.randint(2, 5))
+    for project_id in project_ids:
+        participants = random.sample(researcher_ids, random.randint(2, min(5, len(researcher_ids))))
         for participant_id in participants:
-            if participant_id != supervisor_id:
-                if neo4j.create_project_participation(participant_id, project_id):
-                    relationships_created['PARTICIPATED_IN'] += 1
+            if neo4j.create_project_participation(participant_id, project_id):
+                relationships_created['PARTICIPATED_IN'] += 1
 
     for publication_id in publication_ids:
         authors = random.sample(researcher_ids, random.randint(2, 4))
@@ -238,7 +230,6 @@ def create_diverse_relationships(researcher_ids, project_ids, publication_ids):
                     relationships_created['TEAMWORK_WITH'] += 1
 
     return relationships_created
-
 
 print(f"{Fore.CYAN}{'=' * 70}")
 print(f"{Fore.YELLOW}CREATING LARGE SAMPLE DATA FOR TESTING")
@@ -297,6 +288,16 @@ try:
 
     print(f"{Fore.GREEN}SUCCESS: Created {len(project_ids)} projects")
 
+    print(f"{Fore.YELLOW}   Creating project nodes in Neo4j...")
+    for i, project_data in enumerate(projects_data, 1):
+        project_id = project_ids[i - 1] if i - 1 < len(project_ids) else None
+        if project_id:
+            neo4j.create_project_node({
+                'id': project_id,
+                'title': project_data['title'],
+                'creator_id': project_data['creator_id'],
+                'status': project_data['status']
+            })
     print(f"\n{Fore.YELLOW}Step 4: Creating 30 Publications...")
     publications_data = generate_publication_data(30, researcher_ids)
     publication_ids = []
@@ -311,6 +312,15 @@ try:
 
     print(f"{Fore.GREEN}SUCCESS: Created {len(publication_ids)} publications")
 
+    print(f"{Fore.YELLOW}   Creating publication nodes in Neo4j...")
+    for j, publication_data in enumerate(publications_data, 1):
+        publication_id = publication_ids[j - 1] if j - 1 < len(publication_ids) else None
+        if publication_id:
+            neo4j.create_publication_node({
+                'id': publication_id,
+                'title': publication_data['title'],
+                'year': publication_data['year']
+            })
     print(f"\n{Fore.YELLOW}Step 5: Creating All Relationships...")
     relationships_created = create_diverse_relationships(researcher_ids, project_ids, publication_ids)
 

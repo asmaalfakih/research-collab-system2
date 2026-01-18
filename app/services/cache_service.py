@@ -4,7 +4,6 @@ from app.database.redis import redis_manager
 from app.database.mongodb import mongodb
 from colorama import Fore, Style
 
-
 class CacheService:
     @staticmethod
     def cache_system_stats(ttl: int = 300) -> bool:

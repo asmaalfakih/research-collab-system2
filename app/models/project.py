@@ -2,9 +2,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from bson import ObjectId
 
-
 class Project:
-    """Research Project Model"""
 
     def __init__(self, **kwargs):
         self._id = kwargs.get('_id', ObjectId())
@@ -12,22 +10,21 @@ class Project:
         self.description = kwargs.get('description', '')
         self.creator_id = kwargs.get('creator_id', '')
         self.creator_name = kwargs.get('creator_name', '')
-        self.participants = kwargs.get('participants', [])  # List of researcher IDs
+        self.participants = kwargs.get('participants', [])
         self.start_date = kwargs.get('start_date', datetime.utcnow().date().isoformat())
         self.end_date = kwargs.get('end_date')
-        self.status = kwargs.get('status', 'active')  # active, completed, pending, cancelled
+        self.status = kwargs.get('status', 'active')
         self.research_area = kwargs.get('research_area', '')
         self.tags = kwargs.get('tags', [])
         self.budget = kwargs.get('budget', 0.0)
         self.funding_source = kwargs.get('funding_source', '')
-        self.related_publications = kwargs.get('related_publications', [])  # List of publication IDs
+        self.related_publications = kwargs.get('related_publications', [])
         self.created_at = kwargs.get('created_at', datetime.utcnow())
         self.updated_at = kwargs.get('updated_at', datetime.utcnow())
         self.milestones = kwargs.get('milestones', [])
-        self.documents = kwargs.get('documents', [])  # List of document references
+        self.documents = kwargs.get('documents', [])
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary"""
         return {
             'title': self.title,
             'description': self.description,
@@ -50,11 +47,9 @@ class Project:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Project':
-        """Create object from dictionary"""
         return cls(**data)
 
     def validate(self) -> List[str]:
-        """Validate data"""
         errors = []
 
         if not self.title or len(self.title.strip()) < 3:
@@ -75,7 +70,6 @@ class Project:
         return errors
 
     def add_participant(self, researcher_id: str) -> bool:
-        """Add researcher to project"""
         if researcher_id not in self.participants:
             self.participants.append(researcher_id)
             self.updated_at = datetime.utcnow()
@@ -83,7 +77,6 @@ class Project:
         return False
 
     def remove_participant(self, researcher_id: str) -> bool:
-        """Remove researcher from project"""
         if researcher_id in self.participants:
             self.participants.remove(researcher_id)
             self.updated_at = datetime.utcnow()
@@ -91,7 +84,6 @@ class Project:
         return False
 
     def get_summary(self) -> Dict[str, Any]:
-        """Get project summary"""
         return {
             'title': self.title,
             'creator': self.creator_name,

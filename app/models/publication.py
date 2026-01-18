@@ -2,9 +2,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from bson import ObjectId
 
-
 class Author:
-    """Author model for publication"""
 
     def __init__(self, **kwargs):
         self.researcher_id = kwargs.get('researcher_id', '')
@@ -22,14 +20,12 @@ class Author:
             'contribution': self.contribution
         }
 
-
 class Publication:
-    """Research Publication Model"""
 
     def __init__(self, **kwargs):
         self._id = kwargs.get('_id', ObjectId())
         self.title = kwargs.get('title', '')
-        self.authors = kwargs.get('authors', [])  # List of Author objects/dicts
+        self.authors = kwargs.get('authors', [])
         self.year = kwargs.get('year', datetime.now().year)
         self.doi = kwargs.get('doi', '')
         self.journal = kwargs.get('journal', '')
@@ -37,16 +33,15 @@ class Publication:
         self.abstract = kwargs.get('abstract', '')
         self.keywords = kwargs.get('keywords', [])
         self.citation_count = kwargs.get('citation_count', 0)
-        self.related_projects = kwargs.get('related_projects', [])  # List of project IDs
+        self.related_projects = kwargs.get('related_projects', [])
         self.pdf_url = kwargs.get('pdf_url', '')
-        self.status = kwargs.get('status', 'published')  # published, submitted, accepted, rejected
+        self.status = kwargs.get('status', 'published')
         self.created_at = kwargs.get('created_at', datetime.utcnow())
         self.updated_at = kwargs.get('updated_at', datetime.utcnow())
         self.views = kwargs.get('views', 0)
         self.downloads = kwargs.get('downloads', 0)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary"""
         authors_list = []
         for author in self.authors:
             if isinstance(author, Author):
@@ -75,11 +70,9 @@ class Publication:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Publication':
-        """Create object from dictionary"""
         return cls(**data)
 
     def validate(self) -> List[str]:
-        """Validate data"""
         errors = []
 
         if not self.title or len(self.title.strip()) < 5:
@@ -100,7 +93,6 @@ class Publication:
         return errors
 
     def add_author(self, researcher_id: str, name: str, order: Optional[int] = None) -> bool:
-        """Add author to publication"""
         if order is None:
             order = len(self.authors) + 1
 
@@ -115,7 +107,6 @@ class Publication:
         return True
 
     def get_citation(self, style: str = 'apa') -> str:
-        """Generate citation by style"""
         if not self.authors:
             return self.title
 

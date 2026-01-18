@@ -6,13 +6,10 @@ import math
 import uuid
 import time
 
-
 class Helpers:
-    """General helper functions"""
 
     @staticmethod
     def format_timestamp(timestamp) -> str:
-        """Format timestamp"""
         if not timestamp:
             return "N/A"
 
@@ -44,7 +41,6 @@ class Helpers:
 
     @staticmethod
     def format_duration(seconds: int) -> str:
-        """Format duration"""
         if seconds < 60:
             return f"{seconds} second{'s' if seconds != 1 else ''}"
         elif seconds < 3600:
@@ -61,7 +57,6 @@ class Helpers:
 
     @staticmethod
     def paginate_items(items: List, page: int, per_page: int) -> Dict[str, Any]:
-        """Paginate items"""
         if not items:
             return {
                 'items': [],
@@ -90,14 +85,12 @@ class Helpers:
 
     @staticmethod
     def calculate_percentage(part: int, whole: int) -> float:
-        """Calculate percentage"""
         if whole == 0:
             return 0.0
         return (part / whole) * 100
 
     @staticmethod
     def generate_progress_bar(percentage: float, width: int = 20) -> str:
-        """Generate progress bar"""
         filled = int((percentage / 100) * width)
         empty = width - filled
 
@@ -106,7 +99,6 @@ class Helpers:
 
     @staticmethod
     def colorize_status(status: str) -> str:
-        """Colorize status"""
         status_colors = {
             'approved': Fore.GREEN,
             'pending': Fore.YELLOW,
@@ -124,7 +116,6 @@ class Helpers:
 
     @staticmethod
     def truncate_text(text: str, max_length: int = 50, suffix: str = "...") -> str:
-        """Truncate text"""
         if len(text) <= max_length:
             return text
 
@@ -132,14 +123,12 @@ class Helpers:
 
     @staticmethod
     def generate_id(prefix: str = "ID") -> str:
-        """Generate unique ID"""
         timestamp = int(time.time() * 1000)
         unique_part = str(uuid.uuid4())[:8]
         return f"{prefix}_{timestamp}_{unique_part}"
 
     @staticmethod
     def deep_update(dict1: Dict, dict2: Dict) -> Dict:
-        """Deep dictionary update"""
         result = dict1.copy()
 
         for key, value in dict2.items():
@@ -152,7 +141,6 @@ class Helpers:
 
     @staticmethod
     def safe_json_parse(json_str: str, default: Any = None) -> Any:
-        """Safely parse JSON"""
         try:
             return json.loads(json_str)
         except (json.JSONDecodeError, TypeError):
@@ -160,7 +148,6 @@ class Helpers:
 
     @staticmethod
     def safe_json_stringify(data: Any) -> str:
-        """Safely stringify to JSON"""
         try:
             return json.dumps(data, default=str, ensure_ascii=False)
         except (TypeError, ValueError):
@@ -168,7 +155,6 @@ class Helpers:
 
     @staticmethod
     def calculate_similarity(list1: List, list2: List) -> float:
-        """Calculate similarity between two lists"""
         if not list1 and not list2:
             return 1.0
 
@@ -185,7 +171,6 @@ class Helpers:
 
     @staticmethod
     def format_bytes(size_bytes: int) -> str:
-        """Format file size"""
         if size_bytes == 0:
             return "0 B"
 

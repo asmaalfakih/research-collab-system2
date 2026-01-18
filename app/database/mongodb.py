@@ -8,7 +8,6 @@ from .connection import DatabaseConfig
 from colorama import Fore, Style
 
 class MongoDBManager:
-    """MongoDB Operations Manager"""
 
     _instance = None
 
@@ -19,7 +18,6 @@ class MongoDBManager:
         return cls._instance
 
     def _init_mongodb(self):
-        """Initialize MongoDB connection"""
         config = DatabaseConfig.get_mongodb_config()
 
         try:
@@ -29,11 +27,9 @@ class MongoDBManager:
             )
             self.db = self.client[config['db_name']]
 
-            # Test connection
             self.client.admin.command('ping')
             print(f"{Fore.GREEN}PASS: MongoDB connected to database: {config['db_name']}")
 
-            # Create Collections and Indexes
             self._setup_collections()
 
         except Exception as e:
@@ -42,7 +38,6 @@ class MongoDBManager:
             self.db = None
 
     def _setup_collections(self):
-        """Create basic collections and indexes"""
         collections = {
             'researchers': [
                 {'key': [('email', 1)], 'unique': True, 'name': 'email_unique'},
@@ -76,7 +71,6 @@ class MongoDBManager:
             if collection_name not in self.db.list_collection_names():
                 self.db.create_collection(collection_name)
 
-            # Create indexes
             existing_indexes = self.db[collection_name].index_information()
             for index in indexes:
                 index_name = index.get('name', '_'.join([f[0] for f in index['key']]))
@@ -90,10 +84,7 @@ class MongoDBManager:
                     except Exception as e:
                         print(f"{Fore.YELLOW}WARN: Could not create index {index_name}: {e}")
 
-    # ============= CRUD Operations for Researchers =============
-
     def create_researcher(self, researcher_data: Dict) -> Optional[str]:
-        """Create new researcher"""
         try:
             researcher_data['created_at'] = datetime.utcnow()
             researcher_data['updated_at'] = datetime.utcnow()
@@ -108,7 +99,6 @@ class MongoDBManager:
             return None
 
     def get_researcher(self, researcher_id: str) -> Optional[Dict]:
-        """Get researcher by ID"""
         try:
             researcher = self.db.researchers.find_one({'_id': ObjectId(researcher_id)})
             if researcher:
@@ -119,7 +109,6 @@ class MongoDBManager:
             return None
 
     def get_researcher_by_email(self, email: str) -> Optional[Dict]:
-        """Get researcher by email"""
         try:
             researcher = self.db.researchers.find_one({'email': email})
             if researcher:
@@ -130,20 +119,15 @@ class MongoDBManager:
             return None
 
     def update_researcher(self, researcher_id: str, update_data: Dict) -> bool:
-        """Update researcher data"""
         try:
-            # Create update operation
             update_operation = {'$set': {'updated_at': datetime.utcnow()}}
 
-            # Handle different types of updates
             for key, value in update_data.items():
                 if isinstance(value, dict) and key.startswith('$'):
-                    # MongoDB operator like $push, $inc, etc.
                     if key not in update_operation:
                         update_operation[key] = {}
                     update_operation[key].update(value)
                 else:
-                    # Regular field update
                     if '$set' not in update_operation:
                         update_operation['$set'] = {}
                     update_operation['$set'][key] = value
@@ -158,7 +142,6 @@ class MongoDBManager:
             return False
 
     def delete_researcher(self, researcher_id: str) -> bool:
-        """Delete researcher (soft delete)"""
         try:
             result = self.db.researchers.update_one(
                 {'_id': ObjectId(researcher_id)},
@@ -170,7 +153,6 @@ class MongoDBManager:
             return False
 
     def search_researchers(self, query: Dict, limit: int = 20) -> List[Dict]:
-        """Search researchers"""
         try:
             researchers = self.db.researchers.find(query).limit(limit)
             result = []
@@ -182,10 +164,7 @@ class MongoDBManager:
             print(f"{Fore.RED}FAIL: Error searching researchers: {e}")
             return []
 
-    # ============= Project Operations =============
-
     def create_project(self, project_data: Dict) -> Optional[str]:
-        """Create new project"""
         try:
             project_data['created_at'] = datetime.utcnow()
             project_data['updated_at'] = datetime.utcnow()
@@ -197,7 +176,6 @@ class MongoDBManager:
             return None
 
     def get_project(self, project_id: str) -> Optional[Dict]:
-        """Get project"""
         try:
             project = self.db.projects.find_one({'_id': ObjectId(project_id)})
             if project:
@@ -208,7 +186,6 @@ class MongoDBManager:
             return None
 
     def update_project(self, project_id: str, update_data: Dict) -> bool:
-        """Update project"""
         try:
             update_data['updated_at'] = datetime.utcnow()
             result = self.db.projects.update_one(
@@ -221,7 +198,6 @@ class MongoDBManager:
             return False
 
     def add_project_participant(self, project_id: str, researcher_id: str) -> bool:
-        """Add researcher to project"""
         try:
             result = self.db.projects.update_one(
                 {'_id': ObjectId(project_id)},
@@ -232,10 +208,7 @@ class MongoDBManager:
             print(f"{Fore.RED}FAIL: Error adding participant: {e}")
             return False
 
-    # ============= Publication Operations =============
-
     def create_publication(self, publication_data: Dict) -> Optional[str]:
-        """Create new publication"""
         try:
             publication_data['created_at'] = datetime.utcnow()
             publication_data['updated_at'] = datetime.utcnow()
@@ -247,7 +220,6 @@ class MongoDBManager:
             return None
 
     def get_publications_by_researcher(self, researcher_id: str) -> List[Dict]:
-        """Get publications by researcher"""
         try:
             publications = self.db.publications.find({
                 'authors.researcher_id': researcher_id
@@ -261,17 +233,12 @@ class MongoDBManager:
             print(f"{Fore.RED}FAIL: Error getting publications: {e}")
             return []
 
-    # ============= Analytics =============
-
     def get_researcher_stats(self, researcher_id: str) -> Dict:
-        """Get researcher statistics"""
         try:
-            # Count projects
             projects_count = self.db.projects.count_documents({
                 'participants': researcher_id
             })
 
-            # Count publications
             publications_count = self.db.publications.count_documents({
                 'authors.researcher_id': researcher_id
             })
@@ -285,7 +252,6 @@ class MongoDBManager:
             return {'projects_count': 0, 'publications_count': 0}
 
     def get_top_researchers(self, limit: int = 10) -> List[Dict]:
-        """Get top researchers"""
         try:
             pipeline = [
                 {
@@ -331,10 +297,7 @@ class MongoDBManager:
             print(f"{Fore.RED}FAIL: Error getting top researchers: {e}")
             return []
 
-    # ============= Admin Operations =============
-
     def get_pending_researchers(self) -> List[Dict]:
-        """Get pending researchers for approval"""
         try:
             researchers = self.db.researchers.find({
                 'profile_status': 'pending'
@@ -349,7 +312,6 @@ class MongoDBManager:
             return []
 
     def approve_researcher(self, researcher_id: str) -> bool:
-        """Approve researcher"""
         try:
             result = self.db.researchers.update_one(
                 {'_id': ObjectId(researcher_id)},
@@ -361,14 +323,13 @@ class MongoDBManager:
             return False
 
     def log_activity(self, user_id: str, action: str, details: Dict = None) -> bool:
-        """Log activity"""
         try:
             log_entry = {
                 'user_id': user_id,
                 'action': action,
                 'details': details or {},
                 'timestamp': datetime.utcnow(),
-                'ip_address': '127.0.0.1'  # Can get real IP
+                'ip_address': '127.0.0.1'
             }
             self.db.logs.insert_one(log_entry)
             return True
@@ -377,18 +338,13 @@ class MongoDBManager:
             return False
 
     def close(self):
-        """Close connection"""
         if self.client:
             self.client.close()
             print("MongoDB connection closed")
 
-
-# Create global instance
 mongodb = MongoDBManager()
 
-
 def get_pending_researchers(self):
-    """Get pending researchers for approval"""
     try:
         researchers = self.db.researchers.find({
             'profile_status': 'pending'
@@ -401,10 +357,8 @@ def get_pending_researchers(self):
     except PyMongoError as e:
         print(f"{Fore.RED}FAIL: Error getting pending researchers: {e}")
         return []
-    # ============= Admin Operations =============
 
     def create_admin(self, admin_data: Dict) -> Optional[str]:
-        """Create new admin"""
         try:
             admin_data['created_at'] = datetime.utcnow()
             admin_data['updated_at'] = datetime.utcnow()
@@ -419,7 +373,6 @@ def get_pending_researchers(self):
             return None
 
     def get_admin_by_email(self, email: str) -> Optional[Dict]:
-        """Get admin by email"""
         try:
             admin = self.db.admins.find_one({'email': email})
             if admin:
@@ -430,7 +383,6 @@ def get_pending_researchers(self):
             return None
 
     def get_admin(self, admin_id: str) -> Optional[Dict]:
-        """Get admin by ID"""
         try:
             admin = self.db.admins.find_one({'_id': ObjectId(admin_id)})
             if admin:
@@ -441,7 +393,6 @@ def get_pending_researchers(self):
             return None
 
     def update_admin(self, admin_id: str, update_data: Dict) -> bool:
-        """Update admin data"""
         try:
             update_data['updated_at'] = datetime.utcnow()
             result = self.db.admins.update_one(
@@ -453,10 +404,7 @@ def get_pending_researchers(self):
             print(f"{Fore.RED}FAIL: Error updating admin: {e}")
             return False
 
-    # ============= Admin Operations =============
-
     def create_admin(self, admin_data: Dict) -> Optional[str]:
-        """Create new admin"""
         try:
             admin_data['created_at'] = datetime.utcnow()
             admin_data['updated_at'] = datetime.utcnow()
@@ -471,7 +419,6 @@ def get_pending_researchers(self):
             return None
 
     def get_admin_by_email(self, email: str) -> Optional[Dict]:
-        """Get admin by email"""
         try:
             admin = self.db.admins.find_one({'email': email})
             if admin:
@@ -482,7 +429,6 @@ def get_pending_researchers(self):
             return None
 
     def get_admin(self, admin_id: str) -> Optional[Dict]:
-        """Get admin by ID"""
         try:
             admin = self.db.admins.find_one({'_id': ObjectId(admin_id)})
             if admin:
@@ -493,7 +439,6 @@ def get_pending_researchers(self):
             return None
 
     def update_admin(self, admin_id: str, update_data: Dict) -> bool:
-        """Update admin data"""
         try:
             update_data['updated_at'] = datetime.utcnow()
             result = self.db.admins.update_one(

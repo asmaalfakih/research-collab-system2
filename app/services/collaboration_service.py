@@ -6,7 +6,6 @@ from app.database.neo4j import neo4j
 from app.database.redis import redis_manager
 from app.models.collaboration import Collaboration
 
-
 class CollaborationService:
     @staticmethod
     def record_coauthorship(researcher1_id: str, researcher2_id: str, publication_id: Optional[str] = None) -> Tuple[
@@ -426,37 +425,37 @@ class CollaborationService:
             return None
 
     @staticmethod
-    def get_most_collaborative_pairs(limit=10):
+    def get_most_collaborative_pairs(limit=5):
         try:
-            query = """
-            MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
-            WHERE r1.id < r2.id
-            RETURN 
-                r1.id AS researcher1_id,
-                r1.name AS researcher1_name,
-                r2.id AS researcher2_id,
-                r2.name AS researcher2_name,
-                rel.collaboration_count AS collaboration_count,
-                rel.publications AS publications,
-                rel.last_collaboration AS last_collaboration
-            ORDER BY rel.collaboration_count DESC
-            LIMIT $limit
-            """
+            cache_key = f"collaboration_pairs:{limit}"
+
+            if redis_manager.is_connected():
+                cached = redis_manager.cache_get(cache_key)
+                if cached:
+                    return cached
+
+            query = 
 
             pairs = []
-            with neo4j.driver.session() as session:
-                result = session.run(query, limit=limit)
-                for record in result:
-                    pairs.append({
-                        'researcher1_id': record['researcher1_id'],
-                        'researcher1_name': record['researcher1_name'],
-                        'researcher2_id': record['researcher2_id'],
-                        'researcher2_name': record['researcher2_name'],
-                        'relationship_type': 'CO_AUTHORED_WITH',
-                        'collaboration_count': record['collaboration_count'],
-                        'publications_count': len(record['publications']) if record['publications'] else 0,
-                        'last_collaboration': record['last_collaboration']
-                    })
+            if neo4j and hasattr(neo4j, 'driver') and neo4j.driver:
+                with neo4j.driver.session() as session:
+                    result = session.run(query, limit=limit)
+                    for record in result:
+                        publications_list = record['publications'] if record['publications'] else []
+                        pairs.append({
+                            'researcher1_id': record['researcher1_id'],
+                            'researcher1_name': record['researcher1_name'],
+                            'researcher2_id': record['researcher2_id'],
+                            'researcher2_name': record['researcher2_name'],
+                            'relationship_type': 'CO_AUTHORED_WITH',
+                            'collaboration_count': record['collaboration_count'],
+                            'publications_count': len(publications_list),
+                            'publications': publications_list,
+                            'last_collaboration': record['last_collaboration']
+                        })
+
+            if redis_manager.is_connected():
+                redis_manager.cache_set(cache_key, pairs, 600)
 
             return pairs
         except Exception as e:
@@ -464,37 +463,37 @@ class CollaborationService:
             return []
 
     @staticmethod
-    def get_most_active_teams(limit=10):
+    def get_most_active_teams(limit=5):
         try:
-            query = """
-            MATCH (r1:Researcher)-[rel:TEAMWORK_WITH]-(r2:Researcher)
-            WHERE r1.id < r2.id
-            RETURN 
-                r1.id AS researcher1_id,
-                r1.name AS researcher1_name,
-                r2.id AS researcher2_id,
-                r2.name AS researcher2_name,
-                rel.collaboration_count AS collaboration_count,
-                rel.projects AS projects,
-                rel.last_collaboration AS last_collaboration
-            ORDER BY rel.collaboration_count DESC
-            LIMIT $limit
-            """
+            cache_key = f"active_teams:{limit}"
+
+            if redis_manager.is_connected():
+                cached = redis_manager.cache_get(cache_key)
+                if cached:
+                    return cached
+
+            query = 
 
             teams = []
-            with neo4j.driver.session() as session:
-                result = session.run(query, limit=limit)
-                for record in result:
-                    teams.append({
-                        'researcher1_id': record['researcher1_id'],
-                        'researcher1_name': record['researcher1_name'],
-                        'researcher2_id': record['researcher2_id'],
-                        'researcher2_name': record['researcher2_name'],
-                        'relationship_type': 'TEAMWORK_WITH',
-                        'collaboration_count': record['collaboration_count'],
-                        'projects_count': len(record['projects']) if record['projects'] else 0,
-                        'last_collaboration': record['last_collaboration']
-                    })
+            if neo4j and hasattr(neo4j, 'driver') and neo4j.driver:
+                with neo4j.driver.session() as session:
+                    result = session.run(query, limit=limit)
+                    for record in result:
+                        projects_list = record['projects'] if record['projects'] else []
+                        teams.append({
+                            'researcher1_id': record['researcher1_id'],
+                            'researcher1_name': record['researcher1_name'],
+                            'researcher2_id': record['researcher2_id'],
+                            'researcher2_name': record['researcher2_name'],
+                            'relationship_type': 'TEAMWORK_WITH',
+                            'collaboration_count': record['collaboration_count'],
+                            'projects_count': len(projects_list),
+                            'projects': projects_list,
+                            'last_collaboration': record['last_collaboration']
+                        })
+
+            if redis_manager.is_connected():
+                redis_manager.cache_set(cache_key, teams, 600)
 
             return teams
         except Exception as e:
@@ -502,15 +501,17 @@ class CollaborationService:
             return []
 
     @staticmethod
-    def cache_collaboration_pairs(limit: int = 20, ttl: int = 600):
+    def cache_collaboration_pairs(limit: int = 5, ttl: int = 600):
         try:
             pairs = CollaborationService.get_most_collaborative_pairs(limit)
-            cache_key = f"collaboration_pairs:{limit}"
-            redis_manager.cache_set(cache_key, pairs, ttl)
+            pairs_cache_key = f"collaboration_pairs:{limit}"
+            if redis_manager.is_connected():
+                redis_manager.cache_set(pairs_cache_key, pairs, ttl)
 
             teams = CollaborationService.get_most_active_teams(limit)
-            teams_key = f"active_teams:{limit}"
-            redis_manager.cache_set(teams_key, teams, ttl)
+            teams_cache_key = f"active_teams:{limit}"
+            if redis_manager.is_connected():
+                redis_manager.cache_set(teams_cache_key, teams, ttl)
 
             return True
         except Exception as e:
@@ -518,10 +519,11 @@ class CollaborationService:
             return False
 
     @staticmethod
-    def get_cached_collaboration_pairs(limit: int = 20):
+    def get_cached_collaboration_pairs(limit: int = 5):
         try:
-            cache_key = f"collaboration_pairs:{limit}"
-            return redis_manager.cache_get(cache_key)
+            if redis_manager.is_connected():
+                cache_key = f"collaboration_pairs:{limit}"
+                return redis_manager.cache_get(cache_key)
         except:
             pass
         return None
@@ -559,6 +561,83 @@ class CollaborationService:
         redis_manager.cache_set(cache_key, summary, 300)
 
         return summary
+
+    @staticmethod
+    def delete_coauthorship_complete(researcher1_id: str, researcher2_id: str, deleter_id: str) -> Tuple[bool, str]:
+        try:
+            from app.database.neo4j import neo4j
+
+            print(f"[DEBUG] Deleting coauthorship between {researcher1_id} and {researcher2_id}")
+
+            researcher1 = mongodb.get_researcher(researcher1_id)
+            researcher2 = mongodb.get_researcher(researcher2_id)
+
+            if not researcher1 or not researcher2:
+                return False, "One or both researchers not found"
+
+            if neo4j.driver:
+                try:
+                    with neo4j.driver.session() as session:
+                        result = session.run(
+, id1=researcher1_id, id2=researcher2_id)
+
+                        record = result.single()
+                        deleted_count = record["deleted"] if record else 0
+
+                        if deleted_count == 0:
+                            print(f"[DEBUG] No CO_AUTHORED_WITH relationship found")
+                except Exception as e:
+                    print(f"[DEBUG] Neo4j deletion error: {e}")
+
+            from app.database.redis import redis_manager
+            try:
+                if redis_manager.is_connected():
+                    redis_manager.cache_delete("all_relationships")
+                    redis_manager.cache_delete("relationship_statistics")
+                    redis_manager.cache_delete_pattern(f"*{researcher1_id}*")
+                    redis_manager.cache_delete_pattern(f"*{researcher2_id}*")
+            except:
+                pass
+
+            try:
+                redis_manager.track_activity(deleter_id, 'delete_coauthorship', {
+                    'researcher1_id': researcher1_id,
+                    'researcher2_id': researcher2_id,
+                    'researcher1_name': researcher1.get('name', 'Unknown'),
+                    'researcher2_name': researcher2.get('name', 'Unknown'),
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            except:
+                pass
+
+            return True, f"Coauthorship relationship deleted between {researcher1['name']} and {researcher2['name']}"
+
+        except Exception as e:
+            print(f"[ERROR] Delete coauthorship failed: {e}")
+            return False, f"Error: {str(e)}"
+
+    @staticmethod
+    def delete_relationship_complete(relationship_type: str, relationship_data: Dict[str, Any], deleter_id: str) -> \
+            Tuple[bool, str]:
+        try:
+            print(f"[DEBUG] Deleting {relationship_type} relationship")
+            print(f"[DEBUG] Relationship data: {relationship_data}")
+
+            if relationship_type == 'CO_AUTHORED_WITH':
+                if 'researcher1_id' in relationship_data and 'researcher2_id' in relationship_data:
+                    return CollaborationService.delete_coauthorship_complete(
+                        relationship_data['researcher1_id'],
+                        relationship_data['researcher2_id'],
+                        deleter_id
+                    )
+
+            return CollaborationService.delete_relationship(
+                relationship_type, relationship_data, deleter_id
+            )
+
+        except Exception as e:
+            print(f"[ERROR] Delete relationship failed: {e}")
+            return False, f"Error deleting relationship: {str(e)}"
 
     @staticmethod
     def delete_relationship(relationship_type: str, relationship_data: Dict[str, Any], deleter_id: str) -> Tuple[
@@ -655,10 +734,8 @@ class CollaborationService:
 
             with neo4j.driver.session() as session:
                 for rel_type in relationship_counts.keys():
-                    result = session.run(f"""
-                        MATCH ()-[r:{rel_type}]-()
-                        RETURN count(r) as count
-                    """)
+                    result = session.run(f
+)
                     record = result.single()
                     if record:
                         relationship_counts[rel_type] = record['count']

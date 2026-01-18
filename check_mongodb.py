@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Check MongoDB Data"""
 
 import sys
 sys.path.append('.')
@@ -16,13 +14,11 @@ print("=" * 60)
 client = MongoClient(os.getenv('MONGODB_URI'))
 db = client[os.getenv('MONGODB_DB_NAME')]
 
-# 1. Show all collections
 print("\nCollections in database:")
 for col_name in db.list_collection_names():
     count = db[col_name].count_documents({})
     print(f"  * {col_name}: {count} documents")
 
-# 2. Show all researchers
 print("\nAll Researchers:")
 researchers = db.researchers.find()
 for researcher in researchers:
@@ -33,7 +29,6 @@ for researcher in researchers:
     print(f"    Role: {researcher.get('role')}")
     print()
 
-# 3. Show projects
 print("\nAll Projects:")
 projects = db.projects.find()
 for project in projects:
@@ -43,7 +38,6 @@ for project in projects:
     print(f"    Status: {project.get('status')}")
     print()
 
-# 4. Show publications
 print("\nAll Publications:")
 publications = db.publications.find()
 for pub in publications:

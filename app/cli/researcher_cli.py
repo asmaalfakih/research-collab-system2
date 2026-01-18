@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-CLI Interface for Researchers
-"""
 
 import sys
 from pathlib import Path
@@ -20,7 +16,6 @@ from app.database.mongodb import mongodb
 from app.database.redis import redis_manager
 
 init(autoreset=True)
-
 
 class ResearcherCLI:
     def __init__(self):
@@ -78,30 +73,8 @@ class ResearcherCLI:
             return False
 
     def display_menu(self):
-        menu = f"""
-{Fore.CYAN}{'=' * 60}
-{Fore.YELLOW}RESEARCHER DASHBOARD - {self.current_user['name'] if self.current_user else 'Guest'}
-{Fore.CYAN}{'=' * 60}
+        menu = f
 
-{Fore.GREEN}[1]{Fore.WHITE} My Profile & Statistics
-{Fore.GREEN}[2]{Fore.WHITE} Update My Profile
-{Fore.GREEN}[3]{Fore.WHITE} Search Researchers
-
-{Fore.GREEN}[4]{Fore.WHITE} My Projects
-{Fore.GREEN}[5]{Fore.WHITE} Create New Project
-{Fore.GREEN}[6]{Fore.WHITE} Search Projects
-
-{Fore.GREEN}[7]{Fore.WHITE} My Publications
-{Fore.GREEN}[8]{Fore.WHITE} Add New Publication
-{Fore.GREEN}[9]{Fore.WHITE} Search Publications
-
-{Fore.GREEN}[10]{Fore.WHITE} My Collaborations
-{Fore.GREEN}[11]{Fore.WHITE} Collaboration Network
-{Fore.GREEN}[12]{Fore.WHITE} Suggested Collaborators
-
-{Fore.GREEN}[0]{Fore.WHITE} Logout & Exit
-{Fore.CYAN}{'=' * 60}
-        """
         print(menu)
 
     def view_profile(self):
@@ -359,6 +332,7 @@ class ResearcherCLI:
             'end_date': end_date if end_date else None
         }
 
+        from app.services.project_service import ProjectService
         success, project_id, message = ProjectService.create_project(
             self.current_user['id'], project_data
         )
@@ -550,24 +524,24 @@ class ResearcherCLI:
 
         table_data = []
         for i, rel in enumerate(relationships, 1):
-            if rel['type'] in ['CO_AUTHORED_WITH', 'TEAMWORK_WITH'] and 'other_name' in rel:
+            if rel['relationship_type'] in ['CO_AUTHORED_WITH', 'TEAMWORK_WITH'] and 'other_name' in rel:
                 table_data.append([
                     i,
-                    rel['type'],
+                    rel['relationship_type'],
                     rel['other_name'],
                     rel.get('collaboration_count', 1),
                     rel.get('last_collaboration', 'N/A')
                 ])
-            elif rel['type'] in ['SUPERVISES', 'PARTICIPATED_IN'] and 'project_title' in rel:
+            elif rel['relationship_type'] in ['SUPERVISED', 'PARTICIPATED_IN'] and 'project_title' in rel:
                 table_data.append([
                     i,
-                    rel['type'],
+                    rel['relationship_type'],
                     rel['project_title'],
                     rel.get('role', 'participant'),
                     'N/A'
                 ])
 
-        headers = ['#', 'Type', 'With/Target', 'Count/Role', 'Last Collaboration']
+        headers = ['#', 'Relationship Type', 'With/Target', 'Count/Role', 'Last Collaboration']
         print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
     def collaboration_network(self):
@@ -688,12 +662,10 @@ class ResearcherCLI:
             self.current_user = None
             print(f"\n{Fore.GREEN}SUCCESS: Logged out successfully")
 
-
 @click.command()
 def main():
     cli = ResearcherCLI()
     cli.run()
-
 
 if __name__ == "__main__":
     main()

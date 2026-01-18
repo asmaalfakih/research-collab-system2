@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Check Redis Data"""
 
 import sys
 
@@ -24,9 +22,8 @@ r = redis.Redis(
 )
 
 if r.ping():
-    print("\033[92mRedis is connected\033[0m")  # Green for success
+    print("\033[92mRedis is connected\033[0m")
 
-    # Get all keys
     keys = r.keys("*")
     print(f"\nTotal keys: {len(keys)}")
 
@@ -35,7 +32,6 @@ if r.ping():
         key_type = r.type(key)
         print(f"  * {key} ({key_type})")
 
-        # Show sample values
         if key_type == 'string':
             value = r.get(key)
             if value and len(value) < 100:
@@ -43,7 +39,6 @@ if r.ping():
             elif value:
                 print(f"    Value: {value[:50]}...")
 
-    # Show system info
     print("\nRedis Info:")
     info = r.info()
     print(f"  * Version: {info.get('redis_version')}")
@@ -51,7 +46,7 @@ if r.ping():
     print(f"  * Connected clients: {info.get('connected_clients')}")
 
 else:
-    print("\033[91mRedis is not connected\033[0m")  # Red for error
+    print("\033[91mRedis is not connected\033[0m")
 
 print("\n" + "=" * 60)
-print("\033[92mRedis Check Complete\033[0m")  # Green for success
+print("\033[92mRedis Check Complete\033[0m")

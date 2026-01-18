@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Research Collaboration System - Data Viewer
-Display all data from MongoDB, Neo4j, and Redis
-"""
 
 import sys
 import os
@@ -16,21 +11,16 @@ sys.path.append(str(BASE_DIR))
 
 init(autoreset=True)
 
-
 def display_header(title):
-    """Display section header"""
     print(f"\n{Fore.CYAN}{'=' * 80}")
     print(f"{Fore.YELLOW}{title}")
     print(f"{Fore.CYAN}{'=' * 80}")
 
-
 def check_database_connections():
-    """Check connections to all databases"""
     print(f"\n{Fore.YELLOW}Checking Database Connections...")
 
     results = {}
 
-    # MongoDB Connection
     try:
         from pymongo import MongoClient
         from dotenv import load_dotenv
@@ -51,7 +41,6 @@ def check_database_connections():
         results['mongodb'] = {'status': 'error', 'error': str(e)}
         print(f"{Fore.RED}MongoDB: {e}")
 
-    # Neo4j Connection
     try:
         from neo4j import GraphDatabase
         from dotenv import load_dotenv
@@ -76,7 +65,6 @@ def check_database_connections():
         results['neo4j'] = {'status': 'error', 'error': str(e)}
         print(f"{Fore.RED}Neo4j: {e}")
 
-    # Redis Connection
     try:
         import redis
         from dotenv import load_dotenv
@@ -106,12 +94,9 @@ def check_database_connections():
 
     return results
 
-
 def show_mongodb_data(db):
-    """Display MongoDB collections data"""
     display_header("MONGODB DATA - RESEARCHERS, PROJECTS, PUBLICATIONS")
 
-    # Researchers Collection
     researchers = list(db.researchers.find().sort('created_at', -1).limit(20))
     print(f"\n{Fore.GREEN}RESEARCHERS ({len(researchers)} documents):")
 
@@ -136,7 +121,6 @@ def show_mongodb_data(db):
     else:
         print(f"{Fore.YELLOW}No researchers found")
 
-    # Projects Collection
     projects = list(db.projects.find().sort('created_at', -1).limit(10))
     print(f"\n{Fore.GREEN}PROJECTS ({len(projects)} documents):")
 
@@ -161,7 +145,6 @@ def show_mongodb_data(db):
     else:
         print(f"{Fore.YELLOW}No projects found")
 
-    # Publications Collection
     publications = list(db.publications.find().sort('year', -1).limit(10))
     print(f"\n{Fore.GREEN}PUBLICATIONS ({len(publications)} documents):")
 
@@ -194,27 +177,19 @@ def show_mongodb_data(db):
     else:
         print(f"{Fore.YELLOW}No publications found")
 
-
 def show_neo4j_data(driver):
-    """Display Neo4j graph data"""
     display_header("NEO4J GRAPH DATA - COLLABORATION NETWORK")
 
     with driver.session() as session:
-        # Count researchers
         result = session.run("MATCH (r:Researcher) RETURN count(r) as count")
         count_record = result.single()
         researcher_count = count_record["count"] if count_record else 0
 
         print(f"\n{Fore.GREEN}RESEARCHERS IN GRAPH: {researcher_count}")
 
-        # List researchers
         if researcher_count > 0:
-            result = session.run("""
-                MATCH (r:Researcher)
-                RETURN r.name as name, r.email as email, r.department as department
-                ORDER BY r.name
-                LIMIT 10
-            """)
+            result = session.run(
+)
 
             table_data = []
             for i, record in enumerate(result, 1):
@@ -229,21 +204,9 @@ def show_neo4j_data(driver):
                 headers = ['No', 'Name', 'Email', 'Department']
                 print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-        # Collaboration relationships
         print(f"\n{Fore.GREEN}COLLABORATION RELATIONSHIPS:")
-        result = session.run("""
-            MATCH (r1:Researcher)-[rel]-(r2:Researcher)
-            WHERE r1.name < r2.name
-            RETURN 
-                r1.name as researcher1,
-                r2.name as researcher2,
-                type(rel) as relationship_type,
-                rel.collaboration_count as count,
-                rel.first_collaboration as first_date,
-                rel.last_collaboration as last_date
-            ORDER BY rel.collaboration_count DESC
-            LIMIT 15
-        """)
+        result = session.run(
+)
 
         table_data = []
         for i, record in enumerate(result, 1):
@@ -271,17 +234,9 @@ def show_neo4j_data(driver):
         else:
             print(f"{Fore.YELLOW}No collaboration relationships found")
 
-        # Relationship statistics
         print(f"\n{Fore.GREEN}RELATIONSHIP STATISTICS:")
-        result = session.run("""
-            MATCH ()-[rel]-()
-            RETURN 
-                type(rel) as relationship_type,
-                count(rel) as total_count,
-                avg(rel.collaboration_count) as avg_collaborations,
-                max(rel.collaboration_count) as max_collaborations
-            ORDER BY total_count DESC
-        """)
+        result = session.run(
+)
 
         table_data = []
         for i, record in enumerate(result, 1):
@@ -297,9 +252,7 @@ def show_neo4j_data(driver):
             headers = ['No', 'Type', 'Total', 'Avg Collaborations', 'Max Collaborations']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-
 def show_redis_data(client):
-    """Display Redis cache data"""
     display_header("REDIS CACHE DATA")
 
     try:
@@ -307,7 +260,6 @@ def show_redis_data(client):
         print(f"\n{Fore.GREEN}TOTAL KEYS IN REDIS: {len(keys)}")
 
         if keys:
-            # Key types distribution
             type_counts = {}
             for key in keys[:100]:
                 key_type = client.type(key)
@@ -320,7 +272,6 @@ def show_redis_data(client):
 
             print(tabulate(table_data, headers=['Type', 'Count'], tablefmt='simple_grid'))
 
-            # Sample keys
             print(f"\n{Fore.GREEN}SAMPLE KEYS (first 20):")
             table_data = []
             for i, key in enumerate(keys[:20], 1):
@@ -346,7 +297,6 @@ def show_redis_data(client):
             headers = ['No', 'Key', 'Type', 'TTL', 'Value Preview']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-        # Active sessions
         session_keys = [k for k in keys if k.startswith('session:')] if 'keys' in locals() else []
         print(f"\n{Fore.GREEN}ACTIVE SESSIONS: {len(session_keys)}")
 
@@ -371,7 +321,6 @@ def show_redis_data(client):
                 headers = ['No', 'Session ID', 'Name', 'Email', 'Role']
                 print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-        # Redis info
         print(f"\n{Fore.GREEN}REDIS SERVER INFO:")
         try:
             info = client.info()
@@ -398,21 +347,17 @@ def show_redis_data(client):
     except Exception as e:
         print(f"{Fore.RED}Error reading Redis data: {e}")
 
-
 def show_system_integration():
-    """Show integrated system data using project services"""
     display_header("SYSTEM INTEGRATION DATA")
 
     try:
         from app.database.mongodb import mongodb
         from app.database.neo4j import neo4j
 
-        # Basic counts
         print(f"\n{Fore.GREEN}SYSTEM STATISTICS:")
 
         stats_data = []
 
-        # MongoDB counts
         if hasattr(mongodb, 'db'):
             researcher_count = mongodb.db.researchers.count_documents({})
             project_count = mongodb.db.projects.count_documents({})
@@ -424,7 +369,6 @@ def show_system_integration():
         else:
             stats_data.append(['MongoDB', 'Not connected'])
 
-        # Neo4j counts
         if hasattr(neo4j, 'driver'):
             try:
                 with neo4j.driver.session() as session:
@@ -445,21 +389,12 @@ def show_system_integration():
 
         print(tabulate(stats_data, headers=['Metric', 'Count'], tablefmt='simple_grid'))
 
-        # Collaboration insights
         print(f"\n{Fore.GREEN}COLLABORATION INSIGHTS:")
 
         if hasattr(neo4j, 'driver') and hasattr(mongodb, 'db'):
             with neo4j.driver.session() as session:
-                # Most collaborative researchers
-                result = session.run("""
-                    MATCH (r:Researcher)-[rel]-()
-                    RETURN 
-                        r.name as name,
-                        count(rel) as relationship_count,
-                        sum(rel.collaboration_count) as total_collaborations
-                    ORDER BY total_collaborations DESC
-                    LIMIT 5
-                """)
+                result = session.run(
+)
 
                 insights_data = []
                 for i, record in enumerate(result, 1):
@@ -474,13 +409,8 @@ def show_system_integration():
                     headers = ['Rank', 'Researcher', 'Relationships', 'Total Collaborations']
                     print(tabulate(insights_data, headers=headers, tablefmt='simple_grid'))
 
-                # Relationship types analysis
-                result = session.run("""
-                    MATCH ()-[rel]-()
-                    WITH type(rel) as rel_type, count(*) as count
-                    RETURN rel_type, count
-                    ORDER BY count DESC
-                """)
+                result = session.run(
+)
 
                 rel_data = []
                 for record in result:
@@ -493,21 +423,17 @@ def show_system_integration():
     except Exception as e:
         print(f"{Fore.YELLOW}Could not generate integration data: {e}")
 
-
 def main():
-    """Main function to display all data"""
     print(f"{Fore.CYAN}{'*' * 100}")
     print(f"{Fore.YELLOW}RESEARCH COLLABORATION SYSTEM - COMPLETE DATA VIEW")
     print(f"{Fore.CYAN}{'*' * 100}")
 
     try:
-        # Check database connections
         db_results = check_database_connections()
 
         print(f"\n{Fore.YELLOW}Displaying Data from Connected Databases...")
         print(f"{Fore.CYAN}{'-' * 80}")
 
-        # Display data from each connected database
         if db_results.get('mongodb', {}).get('status') == 'connected':
             show_mongodb_data(db_results['mongodb']['db'])
 
@@ -517,14 +443,12 @@ def main():
         if db_results.get('redis', {}).get('status') == 'connected':
             show_redis_data(db_results['redis']['client'])
 
-        # Show integrated system data
         show_system_integration()
 
         print(f"\n{Fore.CYAN}{'*' * 100}")
         print(f"{Fore.GREEN}DATA VIEW COMPLETED SUCCESSFULLY")
         print(f"{Fore.CYAN}{'*' * 100}")
 
-        # Summary
         print(f"\n{Fore.YELLOW}SUMMARY:")
         mongodb_status = db_results.get('mongodb', {}).get('status', 'unknown')
         neo4j_status = db_results.get('neo4j', {}).get('status', 'unknown')
@@ -538,7 +462,6 @@ def main():
         print(f"\n{Fore.RED}ERROR: {e}")
         import traceback
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()

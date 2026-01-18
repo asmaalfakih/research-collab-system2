@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Comprehensive check of all three databases
-"""
 
 import sys
 import os
@@ -16,9 +12,7 @@ print(f"{Fore.CYAN}{'=' * 80}")
 print(f"{Fore.YELLOW} COMPREHENSIVE DATABASE CHECK")
 print(f"{Fore.CYAN}{'=' * 80}")
 
-
 def check_mongodb():
-    """Check MongoDB"""
     print(f"\n{Fore.YELLOW} MongoDB Check")
     print(f"{Fore.CYAN}{'-' * 40}")
 
@@ -33,7 +27,6 @@ def check_mongodb():
 
         print(f"{Fore.GREEN} Connected to MongoDB")
 
-        # Collections and counts
         print(f"\n{Fore.WHITE}Collections:")
         for col in ['researchers', 'projects', 'publications']:
             count = db[col].count_documents({})
@@ -42,7 +35,6 @@ def check_mongodb():
             else:
                 print(f"{Fore.YELLOW}  * {col}: {count} documents")
 
-        # Sample data
         if db.researchers.count_documents({}) > 0:
             print(f"\n{Fore.WHITE}Sample Researcher:")
             researcher = db.researchers.find_one()
@@ -56,9 +48,7 @@ def check_mongodb():
         print(f"{Fore.RED} MongoDB Check Failed: {e}")
         return False
 
-
 def check_neo4j():
-    """Check Neo4j"""
     print(f"\n{Fore.YELLOW} Neo4j Check")
     print(f"{Fore.CYAN}{'-' * 40}")
 
@@ -74,16 +64,13 @@ def check_neo4j():
         )
 
         with driver.session() as session:
-            # Check connection
             result = session.run("RETURN 'Connected' as status")
             print(f"{Fore.GREEN} Connected to Neo4j")
 
-            # Count nodes
             result = session.run("MATCH (r:Researcher) RETURN count(r) as count")
             node_count = result.single()["count"]
             print(f"{Fore.WHITE}  * Researchers in graph: {node_count}")
 
-            # Count relationships
             result = session.run("MATCH ()-[r:COLLABORATED_WITH]-() RETURN count(r) as count")
             rel_count = result.single()["count"]
             print(f"{Fore.WHITE}  * Collaboration relationships: {rel_count}")
@@ -95,9 +82,7 @@ def check_neo4j():
         print(f"{Fore.RED} Neo4j Check Failed: {e}")
         return False
 
-
 def check_redis():
-    """Check Redis"""
     print(f"\n{Fore.YELLOW} Redis Check")
     print(f"{Fore.CYAN}{'-' * 40}")
 
@@ -118,7 +103,6 @@ def check_redis():
         if r.ping():
             print(f"{Fore.GREEN} Connected to Redis")
 
-            # Count keys
             keys = r.keys("*")
             print(f"{Fore.WHITE}  * Total keys: {len(keys)}")
 
@@ -131,9 +115,7 @@ def check_redis():
         print(f"{Fore.RED} Redis Check Failed: {e}")
         return False
 
-
 def main():
-    """Run all checks"""
     print(f"\n{Fore.YELLOW} Running comprehensive database checks...")
 
     results = []
@@ -153,7 +135,6 @@ def main():
     else:
         results.append(("Redis", False))
 
-    # Summary
     print(f"\n{Fore.CYAN}{'=' * 80}")
     print(f"{Fore.YELLOW} CHECK SUMMARY")
     print(f"{Fore.CYAN}{'=' * 80}")
@@ -180,7 +161,6 @@ def main():
     print(f"{Fore.WHITE}  1. Run the main system: python run.py")
     print(f"{Fore.WHITE}  2. Test admin interface: python run.py admin")
     print(f"{Fore.CYAN}{'=' * 80}")
-
 
 if __name__ == "__main__":
     main()

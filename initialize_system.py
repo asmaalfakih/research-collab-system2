@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Complete System Initialization
-Run this once to set up everything
-"""
 
 import sys
 import os
@@ -20,11 +15,9 @@ print(f"{Fore.CYAN}{'=' * 70}")
 print(f"{Fore.YELLOW} RESEARCH COLLABORATION SYSTEM - INITIALIZATION")
 print(f"{Fore.CYAN}{'=' * 70}")
 
-
 def print_step(step_num, description):
     print(f"\n{Fore.YELLOW}{step_num}. {description}")
     print(f"{Fore.CYAN}{'-' * 50}")
-
 
 print_step("1", "Initializing MongoDB Database")
 try:
@@ -103,15 +96,8 @@ try:
             except Exception as e:
                 print(f"{Fore.YELLOW}   Constraint may already exist: {e}")
 
-        result = session.run("""
-            MERGE (a:Admin {email: $email})
-            SET a.id = $id,
-                a.name = $name,
-                a.department = $department,
-                a.role = $role,
-                a.created_at = datetime()
-            RETURN a.name
-        """, {
+        result = session.run(
+ {
             'email': 'admin@university.edu',
             'id': 'admin_001',
             'name': 'System Admin',

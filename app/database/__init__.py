@@ -4,16 +4,12 @@ from .redis import redis_manager
 
 __all__ = ['mongodb', 'neo4j', 'redis_manager']
 
-
 class DatabaseManager:
-    """Unified Manager for All Databases"""
 
     @staticmethod
     def check_all_connections():
-        """Check all database connections"""
         results = {}
 
-        # Check MongoDB
         if mongodb.client:
             try:
                 mongodb.client.admin.command('ping')
@@ -27,7 +23,6 @@ class DatabaseManager:
         else:
             results['mongodb'] = {'status': 'disconnected'}
 
-        # Check Neo4j
         if neo4j.driver:
             try:
                 with neo4j.driver.session() as session:
@@ -43,7 +38,6 @@ class DatabaseManager:
         else:
             results['neo4j'] = {'status': 'disconnected'}
 
-        # Check Redis
         if redis_manager.is_connected():
             try:
                 info = redis_manager.get_system_stats()
@@ -60,7 +54,6 @@ class DatabaseManager:
 
     @staticmethod
     def close_all():
-        """Close all connections"""
         if mongodb.client:
             mongodb.close()
         if neo4j.driver:
@@ -69,6 +62,4 @@ class DatabaseManager:
             redis_manager.close()
         print("All database connections closed")
 
-
-# Create global instance
 db_manager = DatabaseManager()

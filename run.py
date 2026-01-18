@@ -48,6 +48,7 @@ def display_banner():
     {Fore.GREEN}[8]{Fore.WHITE} Backup System        {Fore.CYAN}- System backup
     {Fore.GREEN}[9]{Fore.WHITE} Cleanup Test Data    {Fore.CYAN}- Clean test data
     {Fore.GREEN}[R]{Fore.WHITE} 6 Relationships      {Fore.CYAN}- Show 6 relationships summary
+    {Fore.GREEN}[T]{Fore.WHITE} Top 5 Pairs          {Fore.CYAN}- Show top collaborative pairs
     {Fore.GREEN}[0]{Fore.WHITE} Exit                 {Fore.CYAN}- Exit
 
     {Fore.CYAN}{'=' * 70}
@@ -222,6 +223,7 @@ def setup_system():
             print(f"   {Fore.WHITE}2. Create large dataset: {Fore.CYAN}Select option 7")
             print(f"   {Fore.WHITE}3. View statistics: {Fore.CYAN}Select option 5")
             print(f"   {Fore.WHITE}4. Try admin interface: {Fore.CYAN}Select option 3")
+            print(f"   {Fore.WHITE}5. View top 5 pairs: {Fore.CYAN}Select option T")
 
         else:
             print(f"\n{Fore.YELLOW}WARNING: Critical databases failed to connect.")
@@ -627,6 +629,94 @@ def show_relationships_summary():
         print(f"{Fore.RED}Error showing relationships summary: {e}")
 
 
+def show_top_pairs():
+    """Show Top 5 Collaborative Pairs"""
+    print(f"\n{Fore.CYAN}{'=' * 70}")
+    print(f"{Fore.YELLOW}TOP 5 COLLABORATIVE PAIRS - RESEARCH COLLABORATION SYSTEM")
+    print(f"{Fore.CYAN}{'=' * 70}")
+
+    try:
+        from app.services.collaboration_service import CollaborationService
+        from tabulate import tabulate
+
+        print(f"{Fore.YELLOW}Fetching data...")
+
+        # الحصول على أفضل 5 أزواج
+        pairs = CollaborationService.get_most_collaborative_pairs(5)
+
+        if not pairs:
+            print(f"{Fore.YELLOW}No collaborative pairs found")
+            return
+
+        print(f"\n{Fore.GREEN}Most Collaborative Researcher Pairs:")
+        print(f"{Fore.WHITE}(Ordered by collaboration count - CO_AUTHORED_WITH only)")
+
+        table_data = []
+        total_collaborations = 0
+
+        for i, pair in enumerate(pairs, 1):
+            collaboration_count = pair.get('collaboration_count', 0)
+            total_collaborations += collaboration_count
+
+            table_data.append([
+                i,
+                f"{pair.get('researcher1_name', 'Unknown')}",
+                f"{pair.get('researcher2_name', 'Unknown')}",
+                collaboration_count,
+                pair.get('publications_count', 0),
+                pair.get('last_collaboration', 'N/A')
+            ])
+
+        headers = ['Rank', 'Researcher 1', 'Researcher 2', 'Collaborations', 'Publications', 'Last Collaboration']
+        print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
+
+        print(f"\n{Fore.GREEN}SUMMARY:")
+        print(f"{Fore.WHITE}Total pairs analyzed: {len(pairs)}")
+        print(f"{Fore.WHITE}Total collaborations: {total_collaborations}")
+
+        if len(pairs) > 0:
+            avg_collaborations = total_collaborations / len(pairs)
+            print(f"{Fore.WHITE}Average collaborations per pair: {avg_collaborations:.1f}")
+
+        # عرض الأزواج الأكثر نشاطاً في المشاريع
+        print(f"\n{Fore.CYAN}{'-' * 70}")
+        print(f"{Fore.YELLOW}TOP 5 ACTIVE TEAMWORK PAIRS")
+        print(f"{Fore.CYAN}{'-' * 70}")
+
+        teams = CollaborationService.get_most_active_teams(5)
+
+        if teams:
+            team_table_data = []
+            for i, team in enumerate(teams, 1):
+                team_table_data.append([
+                    i,
+                    f"{team.get('researcher1_name', 'Unknown')}",
+                    f"{team.get('researcher2_name', 'Unknown')}",
+                    team.get('collaboration_count', 0),
+                    team.get('projects_count', 0),
+                    team.get('last_collaboration', 'N/A')
+                ])
+
+            team_headers = ['Rank', 'Team Member 1', 'Team Member 2', 'Collaborations', 'Projects',
+                            'Last Collaboration']
+            print(tabulate(team_table_data, headers=team_headers, tablefmt='simple_grid'))
+        else:
+            print(f"{Fore.YELLOW}No teamwork data available")
+
+        print(f"\n{Fore.CYAN}{'=' * 70}")
+        print(f"{Fore.GREEN}ANALYSIS:")
+        print(f"{Fore.WHITE}• Top pairs show researchers who co-author frequently")
+        print(f"{Fore.WHITE}• Active teams show researchers who work on projects together")
+        print(f"{Fore.WHITE}• Data source: Neo4j graph database relationships")
+        print(f"{Fore.CYAN}{'=' * 70}")
+
+    except ImportError as e:
+        print(f"{Fore.RED}Error: Cannot import CollaborationService: {e}")
+        print(f"{Fore.YELLOW}Make sure collaboration_service.py is properly configured")
+    except Exception as e:
+        print(f"{Fore.RED}Error showing top pairs: {e}")
+
+
 def initialize_databases():
     """Initialize databases"""
     print(f"\n{Fore.YELLOW}Initializing databases for large dataset mode...")
@@ -834,7 +924,7 @@ def interactive_menu():
         display_banner()
 
         try:
-            choice = input(f"\n{Fore.YELLOW}Enter your choice (0-9, R): {Fore.WHITE}").strip().lower()
+            choice = input(f"\n{Fore.YELLOW}Enter your choice (0-9, R, T): {Fore.WHITE}").strip().lower()
 
             if choice == '1':
                 setup_system()
@@ -856,6 +946,8 @@ def interactive_menu():
                 cleanup_system()
             elif choice == 'r':
                 show_relationships_summary()
+            elif choice == 't':
+                show_top_pairs()
             elif choice == '0':
                 print(f"\n{Fore.GREEN}Thank you for using Research Collaboration System!")
                 print(f"{Fore.CYAN}Large Dataset Mode: 100 Researchers, 50 Projects, 30 Publications")
@@ -864,7 +956,7 @@ def interactive_menu():
                 print(f"{Fore.CYAN}Goodbye!")
                 break
             else:
-                print(f"{Fore.RED}ERROR: Invalid choice. Please enter a number between 0-9 or 'R'.")
+                print(f"{Fore.RED}ERROR: Invalid choice. Please enter a number between 0-9 or 'R' or 'T'.")
 
             input(f"\n{Fore.CYAN}Press Enter to continue...")
 
@@ -902,6 +994,8 @@ def command_line_mode():
             cleanup_system()
         elif command == 'relationships' or command == 'r':
             show_relationships_summary()
+        elif command == 'top-pairs' or command == 't':
+            show_top_pairs()
         elif command == 'help' or command == '--help' or command == '-h':
             display_banner()
         else:
@@ -913,6 +1007,7 @@ def command_line_mode():
             print(f"{Fore.CYAN}  python run.py researcher   {Fore.WHITE}- Researcher interface")
             print(f"{Fore.CYAN}  python run.py stats        {Fore.WHITE}- View statistics")
             print(f"{Fore.CYAN}  python run.py relationships {Fore.WHITE}- Show 6 relationships")
+            print(f"{Fore.CYAN}  python run.py top-pairs    {Fore.WHITE}- Show top 5 collaborative pairs")
             print(f"{Fore.CYAN}  python run.py large-data   {Fore.WHITE}- Create large dataset")
             print(f"{Fore.CYAN}  python run.py help         {Fore.WHITE}- Show this help")
     else:
@@ -925,6 +1020,7 @@ def main():
         print(f"\n{Fore.CYAN}Starting Research Collaboration System - LARGE DATASET MODE...")
         print(f"{Fore.YELLOW}Target: 100 Researchers, 50 Projects, 30 Publications")
         print(f"{Fore.YELLOW}Relationships: 6 defined relationships")
+        print(f"{Fore.YELLOW}Feature: Top 5 Collaborative Pairs Analysis")
 
         env_file = BASE_DIR / '.env'
         if not env_file.exists():
@@ -984,6 +1080,7 @@ DATASET_SIZE=large
         print(f"{Fore.GREEN}Research Collaboration System - LARGE DATASET MODE Ended")
         print(f"{Fore.CYAN}6 Relationships: CO_AUTHORED_WITH, SUPERVISED, TEAMWORK_WITH,")
         print(f"{Fore.CYAN}                PARTICIPATED_IN, AUTHORED, PRODUCED")
+        print(f"{Fore.CYAN}Features: Top 5 Collaborative Pairs Analysis")
         print(f"{Fore.CYAN}{'=' * 70}")
 
 

@@ -2,37 +2,26 @@ import re
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-
 def validate_email(email: str) -> bool:
-    """Validate email address"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
-
 def validate_phone(phone: str) -> bool:
-    """Validate phone number"""
-    # Accept international and local numbers
     pattern = r'^[\+]?[0-9\s\-\(\)]{8,20}$'
     return bool(re.match(pattern, phone))
 
-
 def validate_date(date_str: str, format: str = '%Y-%m-%d') -> bool:
-    """Validate date"""
     try:
         datetime.strptime(date_str, format)
         return True
     except ValueError:
         return False
 
-
 def validate_year(year: int) -> bool:
-    """Validate year"""
     current_year = datetime.now().year
     return 1900 <= year <= current_year + 1
 
-
 def validate_password(password: str) -> List[str]:
-    """Validate password strength"""
     errors = []
 
     if len(password) < 8:
@@ -52,9 +41,7 @@ def validate_password(password: str) -> List[str]:
 
     return errors
 
-
 def validate_researcher_data(data: Dict[str, Any]) -> List[str]:
-    """Validate researcher data"""
     errors = []
 
     if 'name' not in data or not data['name'].strip():
@@ -79,9 +66,7 @@ def validate_researcher_data(data: Dict[str, Any]) -> List[str]:
 
     return errors
 
-
 def validate_project_data(data: Dict[str, Any]) -> List[str]:
-    """Validate project data"""
     errors = []
 
     if 'title' not in data or not data['title'].strip():
@@ -115,9 +100,7 @@ def validate_project_data(data: Dict[str, Any]) -> List[str]:
 
     return errors
 
-
 def validate_publication_data(data: Dict[str, Any]) -> List[str]:
-    """Validate publication data"""
     errors = []
 
     if 'title' not in data or not data['title'].strip():
@@ -154,25 +137,19 @@ def validate_publication_data(data: Dict[str, Any]) -> List[str]:
 
     return errors
 
-
 def sanitize_input(text: str) -> str:
-    """Sanitize input text"""
     if not text:
         return text
 
-    # Remove extra spaces
     text = ' '.join(text.split())
 
-    # Remove dangerous special characters (simple)
     dangerous_chars = ['<', '>', ';', '|', '&', '$']
     for char in dangerous_chars:
         text = text.replace(char, '')
 
     return text.strip()
 
-
 def validate_list_input(input_str: str, min_items: int = 1, max_items: int = 10) -> List[str]:
-    """Validate list input"""
     if not input_str:
         return []
 
@@ -186,9 +163,7 @@ def validate_list_input(input_str: str, min_items: int = 1, max_items: int = 10)
 
     return items
 
-
 def validate_numeric_range(value: Any, min_val: float, max_val: float) -> bool:
-    """Validate numeric range"""
     try:
         num = float(value)
         return min_val <= num <= max_val

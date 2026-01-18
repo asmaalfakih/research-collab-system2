@@ -7,10 +7,12 @@ from app.database.redis import redis_manager
 from app.models.project import Project
 from app.models.collaboration import CollaborationType
 
-
 class ProjectService:
     @staticmethod
     def create_project(creator_id: str, project_data: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
+        print(f"[DEBUG] Creating project for creator: {creator_id}")
+        print(f"[DEBUG] Project data: {project_data.get('title', 'No title')}")
+
         required_fields = ['title', 'description']
         for field in required_fields:
             if field not in project_data or not project_data[field]:
@@ -33,60 +35,76 @@ class ProjectService:
 
         project_data.setdefault('status', 'active')
         project_data.setdefault('start_date', datetime.utcnow().date().isoformat())
-        project_data.setdefault('research_area', '')
+        project_data.setdefault('research_area', 'General Research')
         project_data.setdefault('tags', [])
         project_data.setdefault('budget', 0.0)
         project_data.setdefault('funding_source', '')
         project_data.setdefault('related_publications', [])
+        project_data.setdefault('created_at', datetime.utcnow())
+        project_data.setdefault('updated_at', datetime.utcnow())
 
-        project = Project(**project_data)
-        errors = project.validate()
+        print(f"[DEBUG] Prepared project data with {len(participants)} participants")
 
-        if errors:
-            return False, None, "; ".join(errors)
+        try:
+            project_dict = project_data.copy()
+            result = mongodb.db.projects.insert_one(project_dict)
+            project_id = str(result.inserted_id)
 
-        project_dict = project.to_dict()
-        project_id = mongodb.create_project(project_dict)
+            print(f"[DEBUG] MongoDB project created: {project_id}")
 
-        if not project_id:
-            return False, None, "Failed to create project"
+            mongodb.update_researcher(creator_id, {
+                '$push': {'projects': project_id}
+            })
+            print(f"[DEBUG] Updated creator's projects list")
 
-        mongodb.update_researcher(creator_id, {
-            '$push': {'projects': project_id}
-        })
+            from app.database.neo4j import neo4j
+            if neo4j.driver:
+                try:
+                    neo4j.create_project_node({
+                        'id': project_id,
+                        'title': project_data['title'],
+                        'creator_id': creator_id,
+                        'status': project_data['status']
+                    })
+                    print(f"[DEBUG] Neo4j project node created")
 
-        neo4j.create_research_project_node({
-            'id': project_id,
-            'title': project.title,
-            'status': project.status,
-            'research_area': project.research_area
-        })
+                    neo4j.create_project_participation(creator_id, project_id)
+                    print(f"[DEBUG] Neo4j participation relationship created")
+                except Exception as e:
+                    print(f"[DEBUG] Neo4j creation warning: {e}")
 
-        neo4j.create_supervision_relationship(creator_id, project_id)
+            for participant_id in participants:
+                if participant_id != creator_id:
+                    try:
+                        mongodb.update_researcher(participant_id, {
+                            '$push': {'projects': project_id}
+                        })
 
-        for participant_id in participants:
-            if participant_id != creator_id:
-                mongodb.update_researcher(participant_id, {
-                    '$push': {'projects': project_id}
+                        if neo4j.driver:
+                            neo4j.create_project_participation(participant_id, project_id)
+
+                        print(f"[DEBUG] Added participant: {participant_id}")
+                    except Exception as e:
+                        print(f"[DEBUG] Warning adding participant {participant_id}: {e}")
+
+            from app.database.redis import redis_manager
+            try:
+                redis_manager.track_activity(creator_id, 'create_project', {
+                    'project_id': project_id,
+                    'project_title': project_data['title'],
+                    'timestamp': datetime.utcnow().isoformat()
                 })
-                neo4j.create_participation_relationship(participant_id, project_id)
+            except:
+                pass
 
-        if len(participants) > 1:
-            for i in range(len(participants)):
-                for j in range(i + 1, len(participants)):
-                    neo4j.create_teamwork_relationship(
-                        participants[i],
-                        participants[j],
-                        project_id
-                    )
+            print(f"[DEBUG] Project creation completed successfully")
+            return True, project_id, "Project created successfully"
 
-        redis_manager.track_activity(creator_id, 'create_project', {
-            'project_id': project_id,
-            'project_title': project.title,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-        return True, project_id, "Project created successfully"
+        except Exception as e:
+            print(f"[ERROR] Project creation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False, None, f"Error creating project: {str(e)}"
 
     @staticmethod
     def get_project_details(project_id: str) -> Optional[Dict[str, Any]]:
@@ -109,10 +127,8 @@ class ProjectService:
                 researcher_data['_id'] = str(researcher_data['_id'])
 
                 with neo4j.driver.session() as session:
-                    result = session.run("""
-                        MATCH (r:Researcher {id: $researcher_id})-[rel:PARTICIPATED_IN]->(p:Project {id: $project_id})
-                        RETURN rel.role as role, rel.joined_at as joined_at
-                    """, researcher_id=participant_id, project_id=project_id)
+                    result = session.run(
+, researcher_id=participant_id, project_id=project_id)
 
                     record = result.single()
                     role = 'participant'
@@ -145,10 +161,8 @@ class ProjectService:
 
         supervisor_info = None
         with neo4j.driver.session() as session:
-            result = session.run("""
-                MATCH (r:Researcher)-[rel:SUPERVISES]->(p:Project {id: $project_id})
-                RETURN r.id as supervisor_id
-            """, project_id=project_id)
+            result = session.run(
+, project_id=project_id)
 
             record = result.single()
             if record:
@@ -163,13 +177,8 @@ class ProjectService:
 
         collaboration_network = []
         with neo4j.driver.session() as session:
-            result = session.run("""
-                MATCH (r1:Researcher)-[rel:TEAMWORK_WITH]-(r2:Researcher)
-                WHERE $project_id IN rel.projects
-                RETURN r1.id as researcher1_id, r2.id as researcher2_id, 
-                       rel.collaboration_count as collaboration_count,
-                       rel.last_collaboration as last_collaboration
-            """, project_id=project_id)
+            result = session.run(
+, project_id=project_id)
 
             for record in result:
                 collaboration_network.append({
@@ -272,10 +281,8 @@ class ProjectService:
         })
 
         with neo4j.driver.session() as session:
-            session.run("""
-                MATCH (r:Researcher {id: $researcher_id})-[rel:PARTICIPATED_IN]->(p:Project {id: $project_id})
-                DELETE rel
-            """, researcher_id=researcher_id, project_id=project_id)
+            session.run(
+, researcher_id=researcher_id, project_id=project_id)
 
         redis_manager.track_activity(remover_id, 'remove_project_participant', {
             'project_id': project_id,
@@ -303,10 +310,8 @@ class ProjectService:
 
             is_supervisor = False
             with neo4j.driver.session() as session:
-                result = session.run("""
-                    MATCH (r:Researcher {id: $researcher_id})-[rel:SUPERVISES]->(p:Project {id: $project_id})
-                    RETURN COUNT(rel) as is_supervisor
-                """, researcher_id=researcher_id, project_id=str(project['_id']))
+                result = session.run(
+, researcher_id=researcher_id, project_id=str(project['_id']))
 
                 record = result.single()
                 is_supervisor = record['is_supervisor'] > 0 if record else False
@@ -317,10 +322,8 @@ class ProjectService:
                 project['user_role'] = 'supervisor'
             else:
                 with neo4j.driver.session() as session:
-                    result = session.run("""
-                        MATCH (r:Researcher {id: $researcher_id})-[rel:PARTICIPATED_IN]->(p:Project {id: $project_id})
-                        RETURN rel.role as role
-                    """, researcher_id=researcher_id, project_id=str(project['_id']))
+                    result = session.run(
+, researcher_id=researcher_id, project_id=str(project['_id']))
 
                     record = result.single()
                     project['user_role'] = record['role'] if record else 'participant'
@@ -369,11 +372,8 @@ class ProjectService:
             project['participants_count'] = len(project.get('participants', []))
 
             with neo4j.driver.session() as session:
-                result = session.run("""
-                    MATCH (p:Project {id: $project_id})
-                    OPTIONAL MATCH (pub:Publication)<-[:PRODUCED]-(p)
-                    RETURN COUNT(pub) as publication_count
-                """, project_id=str(project['_id']))
+                result = session.run(
+, project_id=str(project['_id']))
 
                 record = result.single()
                 project['publication_count'] = record['publication_count'] if record else 0
@@ -421,15 +421,11 @@ class ProjectService:
                     return False, "Only project creator or admin can delete project"
 
             with neo4j.driver.session() as session:
-                session.run("""
-                    MATCH (p:Project {id: $project_id})-[rel]-()
-                    DELETE rel
-                """, project_id=project_id)
+                session.run(
+, project_id=project_id)
 
-                session.run("""
-                    MATCH (p:Project {id: $project_id})
-                    DELETE p
-                """, project_id=project_id)
+                session.run(
+, project_id=project_id)
 
             result = mongodb.db.projects.delete_one({'_id': ObjectId(project_id)})
 
@@ -518,11 +514,8 @@ class ProjectService:
             pass
 
         with neo4j.driver.session() as session:
-            result = session.run("""
-                MATCH (p:Project {id: $project_id})
-                OPTIONAL MATCH (p)-[:PRODUCED]->(pub:Publication)
-                RETURN COUNT(DISTINCT pub) as neo4j_publication_count
-            """, project_id=project_id)
+            result = session.run(
+, project_id=project_id)
 
             record = result.single()
             if record:

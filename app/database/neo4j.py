@@ -63,6 +63,39 @@ class Neo4jManager:
             print(f"{Fore.RED}FAIL: Error creating researcher node: {e}")
             return False
 
+    def create_project_node(self, project_data: Dict) -> bool:
+        query = """
+        MERGE (p:Project {id: $id})
+        SET p.title = $title,
+            p.creator_id = $creator_id,
+            p.status = $status,
+            p.created_at = datetime()
+        RETURN p
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, **project_data)
+                return result.single() is not None
+        except Neo4jError as e:
+            print(f"{Fore.RED}FAIL: Error creating project node: {e}")
+            return False
+
+    def create_publication_node(self, publication_data: Dict) -> bool:
+        query = """
+        MERGE (pub:Publication {id: $id})
+        SET pub.title = $title,
+            pub.year = $year,
+            pub.created_at = datetime()
+        RETURN pub
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, **publication_data)
+                return result.single() is not None
+        except Neo4jError as e:
+            print(f"{Fore.RED}FAIL: Error creating publication node: {e}")
+            return False
+
     def create_coauthorship(self, researcher1_id: str, researcher2_id: str, publication_id: str = None) -> int:
         query = """
         MATCH (r1:Researcher {id: $researcher1_id})
