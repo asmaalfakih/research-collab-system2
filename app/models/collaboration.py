@@ -1,84 +1,120 @@
 from datetime import datetime
-from typing import Dict, Any, List
-from enum import Enum
+from typing import List, Optional, Dict, Any
+from bson import ObjectId
+import bcrypt
 
-class CollaborationType(Enum):
-    CO_AUTHORSHIP = "co_authorship"
-    SUPERVISION = "supervision"
-    TEAMWORK = "teamwork"
-    PROJECT_PARTICIPATION = "project_participation"
 
-class Collaboration:
+class Researcher:
+    """Researcher Model"""
+
     def __init__(self, **kwargs):
-        self.relationship_type = kwargs.get('relationship_type', '')
-        self.researcher1_id = kwargs.get('researcher1_id', '')
-        self.researcher2_id = kwargs.get('researcher2_id', '')
-        self.collaboration_count = kwargs.get('collaboration_count', 0)
-        self.first_collaboration = kwargs.get('first_collaboration')
-        self.last_collaboration = kwargs.get('last_collaboration')
-        self.projects = kwargs.get('projects', [])
-        self.publications = kwargs.get('publications', [])
-        self.strength_score = kwargs.get('strength_score', 0.0)
+        self._id = kwargs.get('_id', ObjectId())
+        self.name = kwargs.get('name', '')
+        self.email = kwargs.get('email', '')
+        self.password = kwargs.get('password', '')  # encrypted
+        self.department = kwargs.get('department', '')
+        self.contact = kwargs.get('contact', {
+            'phone': '',
+            'city': 'Hebron',
+            'street': ''
+        })
+        self.profile_status = kwargs.get('profile_status', 'pending')  # pending, approved, rejected, deleted
+        self.role = kwargs.get('role', 'researcher')  # researcher, admin
+        self.research_interests = kwargs.get('research_interests', [])
+        self.projects = kwargs.get('projects', [])  # List of project IDs
+        self.publications = kwargs.get('publications', [])  # List of publication IDs
         self.created_at = kwargs.get('created_at', datetime.utcnow())
         self.updated_at = kwargs.get('updated_at', datetime.utcnow())
+        self.last_login = kwargs.get('last_login')
+        self.login_count = kwargs.get('login_count', 0)
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash password"""
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
+
+    @staticmethod
+    def verify_password(password: str, hashed_password: str) -> bool:
+        """Verify password"""
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert object to dictionary"""
         return {
-            'relationship_type': self.relationship_type,
-            'researcher1_id': self.researcher1_id,
-            'researcher2_id': self.researcher2_id,
-            'collaboration_count': self.collaboration_count,
-            'first_collaboration': self.first_collaboration,
-            'last_collaboration': self.last_collaboration,
+            'name': self.name,
+            'email': self.email,
+            'password': self.password,
+            'department': self.department,
+            'contact': self.contact,
+            'profile_status': self.profile_status,
+            'role': self.role,
+            'research_interests': self.research_interests,
             'projects': self.projects,
             'publications': self.publications,
-            'strength_score': self.strength_score,
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
+            'last_login': self.last_login,
+            'login_count': self.login_count
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Collaboration':
+    def from_dict(cls, data: Dict[str, Any]) -> 'Researcher':
+        """Create object from dictionary"""
         return cls(**data)
 
-    def increment_collaboration(self, project_id: str = None, publication_id: str = None) -> None:
-        self.collaboration_count += 1
+    def validate(self) -> List[str]:
+        """Validate data"""
+        errors = []
 
-        if project_id and project_id not in self.projects:
-            self.projects.append(project_id)
+        if not self.name or len(self.name.strip()) < 2:
+            errors.append("Name must be at least 2 characters")
 
-        if publication_id and publication_id not in self.publications:
-            self.publications.append(publication_id)
+        if not self.email or '@' not in self.email:
+            errors.append("Valid email is required")
 
-        if not self.first_collaboration:
-            self.first_collaboration = datetime.utcnow().isoformat()
+        if not self.department:
+            errors.append("Department is required")
 
-        self.last_collaboration = datetime.utcnow().isoformat()
-        self.updated_at = datetime.utcnow()
-        self._calculate_strength_score()
+        if self.profile_status not in ['pending', 'approved', 'rejected', 'deleted']:
+            errors.append("Invalid profile status")
 
-    def _calculate_strength_score(self) -> None:
-        base_score = self.collaboration_count * 10
+        if self.role not in ['researcher', 'admin']:
+            errors.append("Invalid role")
 
-        type_multiplier = 1.0
-        if self.relationship_type == CollaborationType.CO_AUTHORSHIP.value:
-            type_multiplier += 0.3
-        elif self.relationship_type == CollaborationType.TEAMWORK.value:
-            type_multiplier += 0.2
-        elif self.relationship_type == CollaborationType.SUPERVISION.value:
-            type_multiplier += 0.5
+        return errors
 
-        joint_work_score = (len(self.projects) * 15) + (len(self.publications) * 20)
-        self.strength_score = (base_score * type_multiplier) + joint_work_score
+    def get_public_profile(self) -> Dict[str, Any]:
+        """Get public profile"""
+        return {
+            'name': self.name,
+            'email': self.email,
+            'department': self.department,
+            'research_interests': self.research_interests,
+            'projects_count': len(self.projects),
+            'publications_count': len(self.publications),
+            'profile_status': self.profile_status
+        }
 
-    def get_strength_level(self) -> str:
-        if self.strength_score >= 100:
-            return "Very Strong"
-        elif self.strength_score >= 50:
-            return "Strong"
-        elif self.strength_score >= 20:
-            return "Moderate"
-        elif self.strength_score >= 5:
-            return "Weak"
-        else:
-            return "New"
+
+class Admin(Researcher):
+    """Admin Model (inherits from Researcher)"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.role = 'admin'
+        self.permissions = kwargs.get('permissions', [
+            'manage_users',
+            'approve_profiles',
+            'view_analytics',
+            'manage_system'
+        ])
+        self.admin_level = kwargs.get('admin_level', 'super_admin')  # super_admin, admin, moderator
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Add admin fields"""
+        data = super().to_dict()
+        data['permissions'] = self.permissions
+        data['admin_level'] = self.admin_level
+        return data

@@ -7,6 +7,7 @@ from app.database.redis import redis_manager
 from app.models.researcher import Researcher
 from app.utils.validators import validate_email, validate_phone
 
+
 class ResearcherService:
     @staticmethod
     def get_researcher_profile(researcher_id: str) -> Optional[Dict[str, Any]]:
@@ -29,8 +30,12 @@ class ResearcherService:
 
         collaborators = []
         with neo4j.driver.session() as session:
-            result = session.run(
-, researcher_id=researcher_id)
+            result = session.run("""
+                MATCH (r1:Researcher {id: $researcher_id})-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                RETURN r2.id as collaborator_id, rel.collaboration_count as collaboration_count
+                ORDER BY rel.collaboration_count DESC
+                LIMIT 10
+            """, researcher_id=researcher_id)
 
             for record in result:
                 collaborator_data = mongodb.get_researcher(record['collaborator_id'])
@@ -104,8 +109,10 @@ class ResearcherService:
 
         if neo4j_update:
             with neo4j.driver.session() as session:
-                session.run(
-, researcher_id=researcher_id, update_data=neo4j_update)
+                session.run("""
+                    MATCH (r:Researcher {id: $researcher_id})
+                    SET r += $update_data
+                """, researcher_id=researcher_id, update_data=neo4j_update)
 
         try:
             redis_manager.cache_delete(f"researcher_profile:{researcher_id}")
@@ -218,8 +225,16 @@ class ResearcherService:
     @staticmethod
     def get_researcher_collaboration_network(researcher_id: str, depth: int = 2) -> Dict[str, Any]:
         with neo4j.driver.session() as session:
-            result = session.run(
-, researcher_id=researcher_id, depth=depth)
+            result = session.run("""
+                MATCH (start:Researcher {id: $researcher_id})
+                CALL apoc.path.subgraphAll(start, {
+                    relationshipFilter: "CO_AUTHORED_WITH|TEAMWORK_WITH",
+                    minLevel: 1,
+                    maxLevel: $depth
+                })
+                YIELD nodes, relationships
+                RETURN nodes, relationships
+            """, researcher_id=researcher_id, depth=depth)
 
             record = result.single()
 
@@ -295,8 +310,15 @@ class ResearcherService:
         suggestions = []
 
         with neo4j.driver.session() as session:
-            result = session.run(
-, researcher_id=researcher_id, interests=research_interests, limit=limit * 2)
+            result = session.run("""
+                MATCH (r:Researcher)
+                WHERE r.id <> $researcher_id 
+                AND r.profile_status = 'approved'
+                RETURN r.id as researcher_id, r.name as name,
+                       size([interest IN $interests WHERE interest IN r.research_interests]) as common_interests_count
+                ORDER BY common_interests_count DESC
+                LIMIT $limit
+            """, researcher_id=researcher_id, interests=research_interests, limit=limit * 2)
 
             for record in result:
                 collaborator_id = record['researcher_id']
@@ -305,8 +327,11 @@ class ResearcherService:
                 has_collaborated = False
                 collaboration_count = 0
 
-                collab_result = session.run(
-, researcher1=researcher_id, researcher2=collaborator_id)
+                collab_result = session.run("""
+                    MATCH (r1:Researcher {id: $researcher1})-[rel:CO_AUTHORED_WITH]-(r2:Researcher {id: $researcher2})
+                    RETURN COUNT(rel) as has_collaboration, 
+                           COALESCE(rel.collaboration_count, 0) as collaboration_count
+                """, researcher1=researcher_id, researcher2=collaborator_id)
 
                 collab_record = collab_result.single()
                 if collab_record:
@@ -331,7 +356,9 @@ class ResearcherService:
 
     @staticmethod
     def delete_researcher(researcher_id: str, admin_id: str) -> Tuple[bool, str]:
+        """Simple direct delete - MongoDB only"""
         try:
+            # Find researcher
             researcher = mongodb.db.researchers.find_one({'_id': ObjectId(researcher_id)})
             if not researcher:
                 return False, "Researcher not found"
@@ -342,6 +369,7 @@ class ResearcherService:
             name = researcher.get('name', 'Unknown')
             email = researcher.get('email', '')
 
+            # Simple soft delete
             new_email = f"{email}_DELETED_{int(datetime.utcnow().timestamp())}"
 
             result = mongodb.db.researchers.update_one(
@@ -412,8 +440,20 @@ class ResearcherService:
         }
 
         with neo4j.driver.session() as session:
-            result = session.run(
-, researcher_id=researcher_id)
+            result = session.run("""
+                MATCH (r:Researcher {id: $researcher_id})
+                OPTIONAL MATCH (r)-[auth:AUTHORED]->(pub:Publication)
+                OPTIONAL MATCH (r)-[part:PARTICIPATED_IN]->(p:Project)
+                OPTIONAL MATCH (r)-[sup:SUPERVISES]->(sp:Project)
+                OPTIONAL MATCH (r)-[coauth:CO_AUTHORED_WITH]-(collab:Researcher)
+                OPTIONAL MATCH (r)-[team:TEAMWORK_WITH]-(partner:Researcher)
+                RETURN COUNT(DISTINCT pub) as total_publications,
+                       COUNT(DISTINCT p) as total_projects,
+                       COUNT(DISTINCT sp) as supervised_projects,
+                       COUNT(DISTINCT collab) as coauthors_count,
+                       COUNT(DISTINCT partner) as teammates_count,
+                       SUM(CASE WHEN auth.author_order = 1 THEN 1 ELSE 0 END) as first_author_count
+            """, researcher_id=researcher_id)
 
             record = result.single()
             if record:
@@ -438,8 +478,13 @@ class ResearcherService:
             return cached
 
         with neo4j.driver.session() as session:
-            result = session.run(
-, researcher_id=researcher_id, limit=limit)
+            result = session.run("""
+                MATCH (r1:Researcher {id: $researcher_id})-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                RETURN r2.id as collaborator_id, rel.collaboration_count as collaboration_count,
+                       rel.publications as publications
+                ORDER BY rel.collaboration_count DESC
+                LIMIT $limit
+            """, researcher_id=researcher_id, limit=limit)
 
             collaborators = []
             for record in result:
@@ -499,8 +544,10 @@ class ResearcherService:
             return False, "Failed to update researcher status"
 
         with neo4j.driver.session() as session:
-            session.run(
-, researcher_id=researcher_id, status=new_status)
+            session.run("""
+                MATCH (r:Researcher {id: $researcher_id})
+                SET r.profile_status = $status
+            """, researcher_id=researcher_id, status=new_status)
 
         redis_manager.track_activity(updater_id, 'update_researcher_status', {
             'researcher_id': researcher_id,
@@ -513,13 +560,18 @@ class ResearcherService:
 
         return True, f"Researcher status updated to {new_status}"
 
+    # ====== هنا الدالة المصححة ======
+
     @staticmethod
     def delete_researcher_safe(researcher_identifier: str, admin_id: str) -> Tuple[bool, str]:
+        """حذف آمن للباحث - يعمل مع ID أو Email"""
         try:
             print(f"[SAFE DELETE] Starting for: {researcher_identifier}")
 
+            # 1. البحث عن الباحث
             researcher = None
 
+            # المحاولة الأولى: البحث باستخدام ObjectId
             if ObjectId.is_valid(researcher_identifier):
                 try:
                     researcher = mongodb.db.researchers.find_one(
@@ -529,6 +581,7 @@ class ResearcherService:
                 except:
                     pass
 
+            # المحاولة الثانية: البحث باستخدام Email
             if not researcher:
                 researcher = mongodb.db.researchers.find_one(
                     {'email': researcher_identifier}
@@ -536,6 +589,7 @@ class ResearcherService:
                 if researcher:
                     print(f"[SAFE DELETE] Found by email")
 
+            # المحاولة الثالثة: البحث بالاسم (بديل)
             if not researcher:
                 researchers = list(mongodb.db.researchers.find(
                     {'name': {'$regex': f'.*{researcher_identifier}.*', '$options': 'i'}}
@@ -547,19 +601,23 @@ class ResearcherService:
             if not researcher:
                 return False, "ERROR: Researcher not found"
 
+            # الحصول على الـ ID الصحيح
             researcher_id = str(researcher['_id'])
             name = researcher.get('name', 'Unknown')
             email = researcher.get('email', '')
             old_status = researcher.get('profile_status', 'active')
 
+            # التحقق إذا كان الباحث محذوفاً بالفعل
             if old_status == 'deleted':
                 return False, f"WARNING: Researcher '{name}' is already deleted"
 
+            # التحقق إذا كان المدير يحاول حذف نفسه
             if researcher_id == admin_id:
                 return False, "ERROR: You cannot delete your own account"
 
             print(f"[SAFE DELETE] Processing: {name} ({email}) - ID: {researcher_id}")
 
+            # 2. الحذف الناعم في MongoDB
             new_email = f"deleted_{email}_{int(datetime.utcnow().timestamp())}"
 
             update_result = mongodb.db.researchers.update_one(
@@ -579,6 +637,7 @@ class ResearcherService:
 
             print(f"[SAFE DELETE] MongoDB soft delete successful")
 
+            # 3. تنظيف المشاريع
             try:
                 projects_updated = mongodb.db.projects.update_many(
                     {'participants': researcher_id},
@@ -588,9 +647,11 @@ class ResearcherService:
             except Exception as e:
                 print(f"[SAFE DELETE] Projects cleanup warning: {e}")
 
+            # 4. تنظيف المنشورات
             try:
                 publications = list(mongodb.db.publications.find({'authors.researcher_id': researcher_id}))
                 for pub in publications:
+                    # إزالة المؤلف من قائمة المؤلفين
                     new_authors = []
                     for author in pub.get('authors', []):
                         if isinstance(author, dict) and author.get('researcher_id') != researcher_id:
@@ -604,11 +665,15 @@ class ResearcherService:
             except Exception as e:
                 print(f"[SAFE DELETE] Publications cleanup warning: {e}")
 
+            # 5. تنظيف Neo4j (اختياري)
             if neo4j and hasattr(neo4j, 'driver') and neo4j.driver:
                 try:
                     with neo4j.driver.session() as session:
-                        session.run(
-, researcher_id=researcher_id)
+                        # حذف العقدة والعلاقات
+                        session.run("""
+                            MATCH (r:Researcher {id: $researcher_id})
+                            DETACH DELETE r
+                        """, researcher_id=researcher_id)
 
                         print(f"[SAFE DELETE] Neo4j cleanup completed")
                 except Exception as e:
@@ -616,8 +681,10 @@ class ResearcherService:
             else:
                 print(f"[SAFE DELETE] Neo4j not available, skipping")
 
+            # 6. تنظيف Redis Cache
             try:
                 if redis_manager and redis_manager.is_connected():
+                    # حذف جميع المفاتيح المتعلقة بالباحث
                     patterns = [
                         f"*researcher*{researcher_id}*",
                         f"*{researcher_id}*",
@@ -648,10 +715,14 @@ class ResearcherService:
             traceback.print_exc()
             return False, f"ERROR: System error: {str(e)}"
 
+    # ====== الدوال المساعدة ======
+
     @staticmethod
     def delete_researcher_by_email(email: str, admin_id: str) -> Tuple[bool, str]:
+        """حذف الباحث باستخدام الإيميل فقط"""
         return ResearcherService.delete_researcher_safe(email, admin_id)
 
     @staticmethod
     def delete_researcher_by_id(researcher_id: str, admin_id: str) -> Tuple[bool, str]:
+        """حذف الباحث باستخدام الـ ID فقط"""
         return ResearcherService.delete_researcher_safe(researcher_id, admin_id)

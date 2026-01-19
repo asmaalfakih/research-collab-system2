@@ -6,6 +6,7 @@ from app.database.mongodb import mongodb
 from app.database.redis import redis_manager
 from app.models.researcher import Researcher
 
+
 class AuthService:
     @staticmethod
     def register_researcher(data: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:

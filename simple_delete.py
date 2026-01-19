@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Simple delete tool for Research Collaboration System
+Direct MongoDB operations to fix deletion issues
+"""
 
 import sys
 from pathlib import Path
@@ -9,7 +14,9 @@ sys.path.append(str(Path(__file__).parent))
 
 init(autoreset=True)
 
+
 def simple_delete_researcher(email: str):
+    """Simple direct delete from MongoDB only"""
     print(f"\n{Fore.RED}{'=' * 70}")
     print(f"{Fore.YELLOW}SIMPLE DELETE - RESEARCHER")
     print(f"{Fore.RED}{'=' * 70}")
@@ -17,6 +24,7 @@ def simple_delete_researcher(email: str):
     try:
         from app.database.mongodb import mongodb
 
+        # Find researcher
         researcher = mongodb.db.researchers.find_one({'email': email})
         if not researcher:
             print(f"{Fore.RED}ERROR: No researcher with email: {email}")
@@ -34,6 +42,7 @@ def simple_delete_researcher(email: str):
             print(f"{Fore.YELLOW}Cancelled")
             return False
 
+        # SIMPLE DELETE - Only MongoDB
         new_email = f"{email}_DELETED_{int(datetime.utcnow().timestamp())}"
 
         result = mongodb.db.researchers.update_one(
@@ -59,7 +68,9 @@ def simple_delete_researcher(email: str):
         traceback.print_exc()
         return False
 
+
 def simple_delete_project(title: str):
+    """Simple direct delete project"""
     print(f"\n{Fore.RED}{'=' * 70}")
     print(f"{Fore.YELLOW}SIMPLE DELETE - PROJECT")
     print(f"{Fore.RED}{'=' * 70}")
@@ -67,6 +78,7 @@ def simple_delete_project(title: str):
     try:
         from app.database.mongodb import mongodb
 
+        # Find project
         project = mongodb.db.projects.find_one({'title': title})
         if not project:
             print(f"{Fore.RED}ERROR: No project with title: {title}")
@@ -82,6 +94,7 @@ def simple_delete_project(title: str):
             print(f"{Fore.YELLOW}Cancelled")
             return False
 
+        # Delete project
         result = mongodb.db.projects.delete_one({'_id': ObjectId(project_id)})
 
         if result.deleted_count > 0:
@@ -95,7 +108,9 @@ def simple_delete_project(title: str):
         print(f"{Fore.RED}ERROR: {str(e)}")
         return False
 
+
 def simple_delete_publication(title: str):
+    """Simple direct delete publication"""
     print(f"\n{Fore.RED}{'=' * 70}")
     print(f"{Fore.YELLOW}SIMPLE DELETE - PUBLICATION")
     print(f"{Fore.RED}{'=' * 70}")
@@ -103,6 +118,7 @@ def simple_delete_publication(title: str):
     try:
         from app.database.mongodb import mongodb
 
+        # Find publication
         publication = mongodb.db.publications.find_one({'title': title})
         if not publication:
             print(f"{Fore.RED}ERROR: No publication with title: {title}")
@@ -118,6 +134,7 @@ def simple_delete_publication(title: str):
             print(f"{Fore.YELLOW}Cancelled")
             return False
 
+        # Delete publication
         result = mongodb.db.publications.delete_one({'_id': ObjectId(publication_id)})
 
         if result.deleted_count > 0:
@@ -131,7 +148,9 @@ def simple_delete_publication(title: str):
         print(f"{Fore.RED}ERROR: {str(e)}")
         return False
 
+
 def main():
+    """Main menu"""
     print(f"{Fore.CYAN}{'=' * 70}")
     print(f"{Fore.YELLOW}SIMPLE DELETE TOOL - RESEARCH COLLABORATION SYSTEM")
     print(f"{Fore.CYAN}{'=' * 70}")
@@ -164,6 +183,7 @@ def main():
 
     else:
         print(f"{Fore.RED}Invalid choice")
+
 
 if __name__ == "__main__":
     main()

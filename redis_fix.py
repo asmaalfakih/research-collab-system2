@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+Redis SSL Fix for Research Collaboration System
+"""
 
 import redis
 import ssl
@@ -6,11 +10,14 @@ import os
 
 load_dotenv()
 
+
 def test_redis_with_ssl_fix():
+    """Test Redis with SSL fix"""
 
     print("Testing Redis SSL Connection Fix...")
     print("=" * 60)
 
+    # Read settings from .env
     host = os.getenv("REDIS_HOST")
     port = int(os.getenv("REDIS_PORT"))
     password = os.getenv("REDIS_PASSWORD")
@@ -23,6 +30,7 @@ def test_redis_with_ssl_fix():
     print("\nTesting different connection methods...")
     print("-" * 40)
 
+    # Try different SSL settings
     test_cases = [
         {
             "name": "Method 1: Without SSL",
@@ -42,7 +50,7 @@ def test_redis_with_ssl_fix():
         },
         {
             "name": "Method 5: Basic connection (no ssl param)",
-            "kwargs": {}
+            "kwargs": {}  # Don't pass SSL at all
         }
     ]
 
@@ -53,6 +61,7 @@ def test_redis_with_ssl_fix():
         print(f"   Settings: {test_case['kwargs']}")
 
         try:
+            # Build connection settings
             connection_kwargs = {
                 'host': host,
                 'port': port,
@@ -62,34 +71,42 @@ def test_redis_with_ssl_fix():
                 'socket_connect_timeout': 5,
             }
 
+            # Add specific settings
             connection_kwargs.update(test_case['kwargs'])
 
+            # Create connection
             r = redis.Redis(**connection_kwargs)
 
+            # Test connection
             if r.ping():
                 print(f"   SUCCESS!")
                 successful_method = test_case
 
+                # Test additional operations
                 try:
+                    # SET/GET
                     r.set("redis_fix_test", "Hello from Python!")
                     value = r.get("redis_fix_test")
                     print(f"   SET/GET test: {value}")
 
+                    # HSET/HGET
                     r.hset("test_hash", mapping={"field1": "value1", "field2": "value2"})
                     hash_data = r.hgetall("test_hash")
                     print(f"   HASH test: {hash_data}")
 
+                    # Redis info
                     info = r.info()
                     print(f"   Redis version: {info.get('redis_version')}")
                     print(f"   Memory: {info.get('used_memory_human')}")
 
+                    # Clean test data
                     r.delete("redis_fix_test")
                     r.delete("test_hash")
 
                 except Exception as e:
                     print(f"   Operations test failed: {e}")
 
-                break
+                break  # Stop at first successful method
 
             else:
                 print(f"   Ping failed")
@@ -108,9 +125,11 @@ def test_redis_with_ssl_fix():
         print(f"Method: {successful_method['name']}")
         print(f"Settings: {successful_method['kwargs']}")
 
+        # Create recommended .env settings
         print("\nRecommended .env settings:")
         print("-" * 40)
 
+        # Build .env settings
         env_settings = [
             f"REDIS_HOST={host}",
             f"REDIS_PORT={port}",
@@ -118,6 +137,7 @@ def test_redis_with_ssl_fix():
             f"REDIS_USERNAME={username}"
         ]
 
+        # Add SSL settings based on successful method
         if successful_method['kwargs'].get('ssl') == True:
             env_settings.append("REDIS_SSL=True")
             env_settings.append("REDIS_SSL_CERT_REQS=None")
@@ -140,7 +160,9 @@ def test_redis_with_ssl_fix():
 
     return successful_method
 
+
 def update_env_file(recommended_settings):
+    """Update .env file automatically"""
     if not recommended_settings:
         return False
 
@@ -151,21 +173,26 @@ def update_env_file(recommended_settings):
         return False
 
     try:
+        # Read current file
         with open(env_file, 'r') as f:
             lines = f.readlines()
 
+        # Update Redis settings
         new_lines = []
         redis_updated = False
 
         for line in lines:
             if line.strip() and not line.startswith('#') and 'REDIS_' in line:
+                # Delete old Redis settings
                 continue
             new_lines.append(line)
 
+        # Add new settings
         new_lines.append("\n# Redis Configuration (Auto-updated)\n")
         for setting in recommended_settings:
             new_lines.append(setting + "\n")
 
+        # Save file
         with open(env_file, 'w') as f:
             f.writelines(new_lines)
 
@@ -176,18 +203,23 @@ def update_env_file(recommended_settings):
         print(f"\nFailed to update .env: {e}")
         return False
 
+
 def main():
+    """Main function"""
     print("Redis Connection Fix Tool")
     print("=" * 60)
 
+    # Check if .env file exists
     if not os.path.exists(".env"):
         print(".env file not found!")
         print("Please create .env file first")
         return
 
+    # Test connection
     successful_method = test_redis_with_ssl_fix()
 
     if successful_method:
+        # Build recommended settings
         host = os.getenv("REDIS_HOST")
         port = int(os.getenv("REDIS_PORT"))
         password = os.getenv("REDIS_PASSWORD")
@@ -206,6 +238,7 @@ def main():
         else:
             recommended.append("REDIS_SSL=False")
 
+        # Show auto-update option
         update = input("\nUpdate .env file automatically? (yes/no): ").strip().lower()
 
         if update in ['yes', 'y']:
@@ -215,6 +248,7 @@ def main():
 
     print("\n" + "=" * 60)
     print("Fix tool completed. Run 'python run.py 2' to test connections.")
+
 
 if __name__ == "__main__":
     main()

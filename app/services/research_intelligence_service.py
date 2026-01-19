@@ -1,3 +1,6 @@
+"""
+Research Intelligence Service - Advanced Analytics Queries
+"""
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -7,10 +10,13 @@ from app.database.mongodb import mongodb
 from app.database.neo4j import neo4j
 from app.database.redis import redis_manager
 
+
 class ResearchIntelligenceService:
+    """Main service for research intelligence and advanced analytics"""
 
     @staticmethod
     def get_service_status() -> Dict:
+        """Get service status"""
         return {
             'status': 'active',
             'version': '1.0.0',
@@ -25,8 +31,10 @@ class ResearchIntelligenceService:
             ]
         }
 
+    # ============= Query 1: Find Research Bridge =============
     @staticmethod
     def find_research_bridge(researcher1_id: str, researcher2_id: str) -> Dict:
+        """Find shortest collaboration path between two researchers"""
 
         researcher1 = mongodb.get_researcher(researcher1_id)
         researcher2 = mongodb.get_researcher(researcher2_id)
@@ -46,7 +54,16 @@ class ResearchIntelligenceService:
                 return cached
 
         try:
-            query = 
+            query = """
+            MATCH path = shortestPath((r1:Researcher {id: $id1})-[*]-(r2:Researcher {id: $id2}))
+            WHERE length(path) > 0
+            RETURN 
+                nodes(path) as path_nodes,
+                relationships(path) as path_rels,
+                length(path) as path_length
+            ORDER BY path_length
+            LIMIT 3
+            """
 
             results = []
             with neo4j.driver.session() as session:
@@ -106,8 +123,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 2: Find Hidden Expert =============
     @staticmethod
     def find_hidden_expert(research_area: str, limit: int = 10) -> Dict:
+        """Find influential researchers in a specific field despite low publication count"""
 
         cache_key = f"hidden_expert:{research_area}:{limit}"
 
@@ -128,8 +147,13 @@ class ResearchIntelligenceService:
                 researcher_id = str(researcher['_id'])
 
                 with neo4j.driver.session() as session:
-                    collaboration_stats = session.run(
-, researcher_id=researcher_id)
+                    collaboration_stats = session.run("""
+                        MATCH (r:Researcher {id: $researcher_id})-[rel:CO_AUTHORED_WITH]-(other:Researcher)
+                        RETURN 
+                            COUNT(DISTINCT other) as unique_collaborators,
+                            AVG(rel.collaboration_count) as avg_collaboration_strength,
+                            SUM(rel.collaboration_count) as total_collaborations
+                    """, researcher_id=researcher_id)
 
                     stats = collaboration_stats.single()
 
@@ -188,8 +212,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 3: Analyze Trust Network =============
     @staticmethod
     def analyze_trust_network(department: str = None, min_collaborations: int = 2) -> Dict:
+        """Analyze research trust network in a specific department"""
 
         cache_key = f"trust_network:{department or 'all'}:{min_collaborations}"
 
@@ -199,7 +225,22 @@ class ResearchIntelligenceService:
                 return cached
 
         try:
-            query = 
+            query = """
+            MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+            WHERE rel.collaboration_count >= $min_collaborations
+            AND ($department IS NULL OR r1.department = $department OR r2.department = $department)
+            RETURN 
+                r1.id as researcher1_id,
+                r1.name as researcher1_name,
+                r1.department as researcher1_dept,
+                r2.id as researcher2_id,
+                r2.name as researcher2_name,
+                r2.department as researcher2_dept,
+                rel.collaboration_count as collaboration_count,
+                SIZE(rel.publications) as joint_publications
+            ORDER BY rel.collaboration_count DESC
+            LIMIT 50
+            """
 
             trust_relationships = []
             with neo4j.driver.session() as session:
@@ -265,8 +306,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 4: Find Lost Opportunities =============
     @staticmethod
     def find_lost_opportunities(min_similarity: float = 0.5) -> Dict:
+        """Find missed collaboration opportunities between similar researchers"""
 
         cache_key = f"lost_opportunities:{min_similarity}"
 
@@ -291,8 +334,10 @@ class ResearchIntelligenceService:
                     r2_id = str(r2['_id'])
 
                     with neo4j.driver.session() as session:
-                        existing_collab = session.run(
-, id1=r1_id, id2=r2_id)
+                        existing_collab = session.run("""
+                            MATCH (r1:Researcher {id: $id1})-[rel:CO_AUTHORED_WITH]-(r2:Researcher {id: $id2})
+                            RETURN COUNT(rel) as collaboration_count
+                        """, id1=r1_id, id2=r2_id)
 
                         collab_count = existing_collab.single()['collaboration_count']
 
@@ -344,8 +389,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 5: Identify High-Risk Projects =============
     @staticmethod
     def identify_high_risk_projects(risk_threshold: float = 1.5) -> Dict:
+        """Identify projects with diverse teams but little prior collaboration"""
 
         cache_key = f"high_risk_projects:{risk_threshold}"
 
@@ -382,8 +429,10 @@ class ResearchIntelligenceService:
                                 departments.add(r2.get('department', 'Unknown'))
 
                                 with neo4j.driver.session() as session:
-                                    prior_collab = session.run(
-, id1=participants[i], id2=participants[j])
+                                    prior_collab = session.run("""
+                                        MATCH (r1:Researcher {id: $id1})-[rel:CO_AUTHORED_WITH]-(r2:Researcher {id: $id2})
+                                        RETURN COUNT(rel) as collaboration_count
+                                    """, id1=participants[i], id2=participants[j])
 
                                     collab_count = prior_collab.single()['collaboration_count'] or 0
                                     if collab_count > 0:
@@ -429,8 +478,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 6: Analyze Project Research Impact =============
     @staticmethod
     def analyze_project_research_impact(project_id: str) -> Dict:
+        """Analyze how project affected participant research output"""
 
         cache_key = f"project_impact:{project_id}"
 
@@ -523,8 +574,10 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Query 7: Recommend Research Partners =============
     @staticmethod
     def recommend_research_partners(researcher_id: str, limit: int = 5) -> Dict:
+        """Recommend research partners based on multiple criteria"""
 
         cache_key = f"partner_recommendations:{researcher_id}:{limit}"
 
@@ -566,8 +619,10 @@ class ResearchIntelligenceService:
                                                                   len(candidate_interests)) if target_interests and candidate_interests else 0
 
                 with neo4j.driver.session() as session:
-                    mutual_connections = session.run(
-, id1=researcher_id, id2=candidate_id)
+                    mutual_connections = session.run("""
+                        MATCH (r1:Researcher {id: $id1})-[rel1:CO_AUTHORED_WITH]-(mutual:Researcher)-[rel2:CO_AUTHORED_WITH]-(r2:Researcher {id: $id2})
+                        RETURN COUNT(DISTINCT mutual) as mutual_count
+                    """, id1=researcher_id, id2=candidate_id)
 
                     mutual_count = mutual_connections.single()['mutual_count'] or 0
 
@@ -614,6 +669,7 @@ class ResearchIntelligenceService:
                 'data': None
             }
 
+    # ============= Helper Methods =============
     @staticmethod
     def _calculate_trust_level(collaboration_count: int, joint_publications: int) -> str:
         score = (collaboration_count * 0.6) + (joint_publications * 0.4)

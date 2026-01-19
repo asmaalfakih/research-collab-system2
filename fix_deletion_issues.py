@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+Fix deletion issues in Research Collaboration System
+"""
 
 import sys
 from pathlib import Path
@@ -7,7 +11,9 @@ sys.path.append(str(Path(__file__).parent))
 
 init(autoreset=True)
 
+
 def fix_all_deletion_issues():
+    """Fix all deletion-related issues"""
     print(f"{Fore.CYAN}{'=' * 70}")
     print(f"{Fore.YELLOW}FIXING DELETION ISSUES - RESEARCH COLLABORATION SYSTEM")
     print(f"{Fore.CYAN}{'=' * 70}")
@@ -19,18 +25,21 @@ def fix_all_deletion_issues():
 
         print(f"\n{Fore.GREEN}1. Checking database connections...")
 
+        # Check MongoDB
         if mongodb.client:
             print(f"{Fore.GREEN}   MongoDB: Connected")
         else:
             print(f"{Fore.RED}   MongoDB: Not connected")
             return False
 
+        # Check Neo4j
         if neo4j.driver:
             print(f"{Fore.GREEN}   Neo4j: Connected")
         else:
             print(f"{Fore.RED}   Neo4j: Not connected")
             return False
 
+        # Check Redis
         if redis_manager.is_connected():
             print(f"{Fore.GREEN}   Redis: Connected")
         else:
@@ -38,6 +47,7 @@ def fix_all_deletion_issues():
 
         print(f"\n{Fore.GREEN}2. Creating indexes for better deletion performance...")
 
+        # Create indexes in MongoDB for faster queries
         indexes = [
             ('researchers', [('email', 1)], {'unique': True}),
             ('researchers', [('profile_status', 1)], {}),
@@ -55,7 +65,9 @@ def fix_all_deletion_issues():
 
         print(f"\n{Fore.GREEN}3. Cleaning up orphaned data...")
 
+        # Find and remove orphaned references
         try:
+            # Find researchers referenced in projects but not existing
             all_researcher_ids = [str(r['_id']) for r in mongodb.db.researchers.find({}, {'_id': 1})]
 
             projects = list(mongodb.db.projects.find({}))
@@ -75,6 +87,7 @@ def fix_all_deletion_issues():
 
         print(f"\n{Fore.GREEN}4. Testing deletion functions...")
 
+        # Create a test researcher for deletion test
         test_researcher = {
             'name': 'Test Researcher For Deletion',
             'email': 'test.delete@university.edu',
@@ -89,6 +102,7 @@ def fix_all_deletion_issues():
         if test_id:
             print(f"{Fore.GREEN}   Created test researcher: {test_id}")
 
+            # Test safe delete
             from app.services.researcher_service import ResearcherService
             success, message = ResearcherService.safe_delete_researcher(test_id, 'system_admin')
 
@@ -125,6 +139,7 @@ def fix_all_deletion_issues():
         import traceback
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     fix_all_deletion_issues()

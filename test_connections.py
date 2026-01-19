@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+Test all database connections
+"""
 
 import sys
 import os
@@ -12,6 +16,7 @@ print(f"{Fore.CYAN}{'=' * 60}")
 print(f"{Fore.YELLOW} TESTING DATABASE CONNECTIONS")
 print(f"{Fore.CYAN}{'=' * 60}")
 
+# Test MongoDB
 print(f"\n{Fore.YELLOW}1. Testing MongoDB Connection...")
 try:
     from pymongo import MongoClient
@@ -30,6 +35,7 @@ try:
 except Exception as e:
     print(f"{Fore.RED}   MongoDB Error: {e}")
 
+# Test Neo4j
 print(f"\n{Fore.YELLOW}2. Testing Neo4j Connection...")
 try:
     from neo4j import GraphDatabase
@@ -52,6 +58,7 @@ try:
 except Exception as e:
     print(f"{Fore.RED}   Neo4j Error: {e}")
 
+# Test Redis
 print(f"\n{Fore.YELLOW}3. Testing Redis Connection...")
 try:
     import redis

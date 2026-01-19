@@ -16,6 +16,7 @@ from app.services.research_intelligence_service import ResearchIntelligenceServi
 
 init(autoreset=True)
 
+
 class AdminCLI:
     def __init__(self):
         self.current_session = None
@@ -23,6 +24,7 @@ class AdminCLI:
         self.mongodb = mongodb
 
     def login(self):
+        """Admin login"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}ADMIN LOGIN")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -54,11 +56,31 @@ class AdminCLI:
         return True
 
     def display_menu(self):
-        menu = f
+        """Display admin menu with advanced options"""
+        menu = f"""
+{Fore.CYAN}{'=' * 70}
+{Fore.YELLOW}ADMIN DASHBOARD - {self.current_user['name'] if self.current_user else 'Guest'}
+{Fore.CYAN}{'=' * 70}
 
+{Fore.GREEN}[1]{Fore.WHITE} Manage Researchers
+{Fore.GREEN}[2]{Fore.WHITE} Manage Projects
+{Fore.GREEN}[3]{Fore.WHITE} Manage Publications
+{Fore.GREEN}[4]{Fore.WHITE} View System Statistics
+{Fore.GREEN}[5]{Fore.WHITE} View All Relationships
+{Fore.GREEN}[6]{Fore.WHITE} View Top 5 Collaborative Pairs
+{Fore.GREEN}[7]{Fore.WHITE} Database Status
+
+{Fore.CYAN}[8]{Fore.WHITE} Advanced Analytics Dashboard
+{Fore.CYAN}[9]{Fore.WHITE} Collaboration Intelligence
+{Fore.CYAN}[10]{Fore.WHITE} Research Network Analysis
+
+{Fore.GREEN}[0]{Fore.WHITE} Logout & Exit
+{Fore.CYAN}{'=' * 70}
+        """
         print(menu)
 
     def advanced_analytics_dashboard(self):
+        """Advanced analytics dashboard"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 60}")
             print(f"{Fore.YELLOW}ADVANCED ANALYTICS DASHBOARD")
@@ -95,6 +117,7 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def find_research_bridges_admin(self):
+        """Find research bridges between researchers"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}FIND RESEARCH COLLABORATION BRIDGES")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -161,6 +184,7 @@ class AdminCLI:
                     headers = ['#', 'Path Length', 'Total Bridges', 'Main Connector']
                     print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+                    # Show detailed path
                     print(f"\n{Fore.GREEN}Detailed path analysis:")
                     shortest_bridge = min(bridges, key=lambda x: x['path_length'])
                     for node in shortest_bridge.get('path_details', []):
@@ -178,6 +202,7 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def find_hidden_experts_admin(self):
+        """Find hidden experts in specific fields"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}FIND HIDDEN EXPERTS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -216,6 +241,7 @@ class AdminCLI:
             headers = ['Rank', 'Name', 'Department', 'Publications', 'Citations', 'Collaborators', 'Impact Score']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+            # Show top expert details
             top_expert = experts[0]
             print(f"\n{Fore.GREEN}TOP HIDDEN EXPERT:")
             print(f"{Fore.WHITE}Name: {top_expert['name']}")
@@ -226,6 +252,7 @@ class AdminCLI:
             print(f"{Fore.YELLOW}No hidden experts found in this field")
 
     def analyze_trust_networks_admin(self):
+        """Analyze trust networks in the system"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}ANALYZE TRUST NETWORKS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -264,6 +291,7 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {result.get('message', 'Unknown error')}")
 
     def identify_lost_opportunities_admin(self):
+        """Identify lost collaboration opportunities"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}IDENTIFY LOST COLLABORATION OPPORTUNITIES")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -292,6 +320,7 @@ class AdminCLI:
             print(f"{Fore.YELLOW}No significant lost opportunities found")
 
     def detect_high_risk_projects_admin(self):
+        """Detect high-risk projects"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}DETECT HIGH-RISK PROJECTS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -324,6 +353,7 @@ class AdminCLI:
             headers = ['#', 'Project Title', 'Team Size', 'Departments', 'Collaboration %', 'Risk Score', 'Level']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+            # Show highest risk project
             highest_risk = projects[0]
             print(f"\n{Fore.RED}HIGHEST RISK PROJECT:")
             print(f"{Fore.WHITE}Title: {highest_risk['title']}")
@@ -334,6 +364,7 @@ class AdminCLI:
             print(f"{Fore.GREEN}No high-risk projects detected")
 
     def analyze_project_impact_admin(self):
+        """Analyze project research impact"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}ANALYZE PROJECT RESEARCH IMPACT")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -401,6 +432,7 @@ class AdminCLI:
             print(f"{Fore.RED}Please enter a valid number")
 
     def generate_partner_recommendations_admin(self):
+        """Generate research partner recommendations"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}GENERATE PARTNER RECOMMENDATIONS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -469,6 +501,7 @@ class AdminCLI:
             print(f"{Fore.RED}Please enter a valid number")
 
     def collaboration_intelligence_dashboard(self):
+        """Collaboration intelligence dashboard"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 60}")
             print(f"{Fore.YELLOW}COLLABORATION INTELLIGENCE DASHBOARD")
@@ -496,6 +529,7 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def show_collaboration_network_map(self):
+        """Show collaboration network map"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}COLLABORATION NETWORK MAP")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -503,6 +537,7 @@ class AdminCLI:
         try:
             from app.services.researcher_service import ResearcherService
 
+            # Get all researchers
             researchers = list(mongodb.db.researchers.find(
                 {'profile_status': 'approved'},
                 {'name': 1, 'department': 1, '_id': 1}
@@ -515,6 +550,7 @@ class AdminCLI:
             print(f"\n{Fore.GREEN}COLLABORATION NETWORK:")
             print(f"{Fore.WHITE}Total Researchers: {len(researchers)}")
 
+            # Show network statistics
             for researcher in researchers[:5]:
                 researcher_id = str(researcher['_id'])
                 network = ResearcherService.get_collaboration_network(researcher_id, depth=1)
@@ -529,9 +565,14 @@ class AdminCLI:
                         for conn in network['connections'][:3]:
                             print(f"    • {conn.get('name', 'Unknown')}")
 
+            # Overall network statistics
             with neo4j.driver.session() as session:
-                result = session.run(
-)
+                result = session.run("""
+                    MATCH ()-[r]-()
+                    RETURN 
+                        count(DISTINCT r) as total_relationships,
+                        avg(r.collaboration_count) as avg_collaborations
+                """)
 
                 stats = result.single()
                 if stats:
@@ -543,14 +584,25 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def analyze_department_collaboration(self):
+        """Analyze inter-department collaboration"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}DEPARTMENT COLLABORATION ANALYSIS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
             with neo4j.driver.session() as session:
-                result = session.run(
-)
+                # Get department collaboration matrix
+                result = session.run("""
+                    MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                    WHERE r1.department IS NOT NULL AND r2.department IS NOT NULL
+                    RETURN 
+                        r1.department as dept1,
+                        r2.department as dept2,
+                        count(rel) as collaboration_count,
+                        avg(rel.collaboration_count) as avg_strength
+                    ORDER BY collaboration_count DESC
+                    LIMIT 20
+                """)
 
                 print(f"\n{Fore.GREEN}TOP DEPARTMENT COLLABORATIONS:")
 
@@ -567,8 +619,14 @@ class AdminCLI:
                 headers = ['#', 'Department 1', 'Department 2', 'Collaborations', 'Avg Strength']
                 print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-                result = session.run(
-)
+                # Most collaborative departments
+                result = session.run("""
+                    MATCH (r:Researcher)-[rel:CO_AUTHORED_WITH]-()
+                    WITH r.department as department, count(DISTINCT rel) as total_collaborations
+                    RETURN department, total_collaborations
+                    ORDER BY total_collaborations DESC
+                    LIMIT 10
+                """)
 
                 print(f"\n{Fore.GREEN}MOST COLLABORATIVE DEPARTMENTS:")
 
@@ -587,11 +645,13 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def analyze_research_clusters(self):
+        """Analyze research interest clusters"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}RESEARCH INTEREST CLUSTERS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
+            # Get all research interests
             pipeline = [
                 {"$unwind": "$research_interests"},
                 {"$group": {"_id": "$research_interests", "count": {"$sum": 1}}},
@@ -614,12 +674,14 @@ class AdminCLI:
             headers = ['Rank', 'Research Interest', 'Researchers']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+            # Show interest clusters
             print(f"\n{Fore.GREEN}INTEREST CLUSTERS:")
 
             for interest in interests[:5]:
                 interest_name = interest['_id']
                 print(f"\n{Fore.CYAN}{interest_name} ({interest['count']} researchers):")
 
+                # Find researchers with this interest
                 researchers = list(mongodb.db.researchers.find(
                     {'research_interests': interest_name},
                     {'name': 1, 'department': 1}
@@ -632,11 +694,13 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def analyze_collaboration_trends(self):
+        """Analyze collaboration trends over time"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}COLLABORATION TREND ANALYSIS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
+            # Get publication trends
             pipeline = [
                 {"$group": {"_id": "$year", "count": {"$sum": 1}}},
                 {"$sort": {"_id": -1}},
@@ -662,8 +726,10 @@ class AdminCLI:
 
             print(f"\n{Fore.WHITE}Total publications in last {len(trends)} years: {total_publications}")
 
+            # Collaboration trend
             print(f"\n{Fore.GREEN}COLLABORATION TREND ANALYSIS:")
 
+            # Get average authors per publication
             pipeline = [
                 {"$project": {"author_count": {"$size": "$authors"}}},
                 {"$group": {"_id": None, "avg_authors": {"$avg": "$author_count"}}}
@@ -683,6 +749,7 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def research_network_analysis(self):
+        """Advanced research network analysis"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 60}")
             print(f"{Fore.YELLOW}RESEARCH NETWORK ANALYSIS")
@@ -713,14 +780,21 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def analyze_network_centrality(self):
+        """Analyze network centrality metrics"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}NETWORK CENTRALITY ANALYSIS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
             with neo4j.driver.session() as session:
-                result = session.run(
-)
+                # Degree centrality (most connected researchers)
+                result = session.run("""
+                    MATCH (r:Researcher)-[rel]-()
+                    WITH r, count(DISTINCT rel) as degree
+                    RETURN r.name as name, degree
+                    ORDER BY degree DESC
+                    LIMIT 10
+                """)
 
                 print(f"\n{Fore.GREEN}DEGREE CENTRALITY (Most Connected):")
 
@@ -735,10 +809,20 @@ class AdminCLI:
                 headers = ['Rank', 'Researcher', 'Connections']
                 print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+                # Betweenness centrality (bridge researchers)
                 print(f"\n{Fore.GREEN}BRIDGE RESEARCHERS (Betweenness):")
 
-                result = session.run(
-)
+                result = session.run("""
+                    MATCH (r:Researcher)
+                    WHERE size((r)-[]-()) > 1
+                    WITH r
+                    MATCH path = shortestPath((start:Researcher)-[*]-(end:Researcher))
+                    WHERE start <> end AND r IN nodes(path)
+                    WITH r, count(path) as betweenness
+                    RETURN r.name as name, betweenness
+                    ORDER BY betweenness DESC
+                    LIMIT 10
+                """)
 
                 table_data = []
                 for i, record in enumerate(result, 1):
@@ -755,11 +839,13 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def detect_communities(self):
+        """Detect research communities in the network"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}COMMUNITY DETECTION")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
+            # Simple community detection based on departments
             pipeline = [
                 {"$group": {"_id": "$department", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
@@ -785,11 +871,19 @@ class AdminCLI:
 
             print(f"\n{Fore.WHITE}Total researchers in top communities: {total_researchers}")
 
+            # Analyze inter-community collaboration
             print(f"\n{Fore.GREEN}INTER-COMMUNITY COLLABORATION:")
 
             with neo4j.driver.session() as session:
-                result = session.run(
-)
+                result = session.run("""
+                    MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                    WHERE r1.department IS NOT NULL AND r2.department IS NOT NULL
+                    WITH r1.department as dept1, r2.department as dept2, count(rel) as collaborations
+                    WHERE dept1 <> dept2
+                    RETURN dept1, dept2, collaborations
+                    ORDER BY collaborations DESC
+                    LIMIT 10
+                """)
 
                 collab_data = []
                 for i, record in enumerate(result, 1):
@@ -810,11 +904,13 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def identify_influential_researchers(self):
+        """Identify most influential researchers"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}INFLUENTIAL RESEARCHERS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
+            # Get researchers with most publications
             pipeline = [
                 {"$unwind": "$authors"},
                 {"$group": {"_id": "$authors.researcher_id", "publication_count": {"$sum": 1}}},
@@ -842,6 +938,7 @@ class AdminCLI:
             headers = ['Rank', 'Researcher', 'Publications', 'Department']
             print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
+            # Get researchers with most citations
             pipeline = [
                 {"$unwind": "$authors"},
                 {"$group": {"_id": "$authors.researcher_id", "total_citations": {"$sum": "$citation_count"}}},
@@ -873,14 +970,20 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def identify_collaboration_bottlenecks(self):
+        """Identify collaboration bottlenecks"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}COLLABORATION BOTTLENECKS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
             with neo4j.driver.session() as session:
-                result = session.run(
-)
+                # Find isolated researchers
+                result = session.run("""
+                    MATCH (r:Researcher)
+                    WHERE NOT (r)-[]-()
+                    RETURN r.name as name, r.department as department
+                    LIMIT 10
+                """)
 
                 isolated = list(result)
                 if isolated:
@@ -899,8 +1002,14 @@ class AdminCLI:
                 else:
                     print(f"\n{Fore.GREEN}No isolated researchers found")
 
-                result = session.run(
-)
+                # Find single-connection researchers
+                result = session.run("""
+                    MATCH (r:Researcher)-[rel]-()
+                    WITH r, count(DISTINCT rel) as connections
+                    WHERE connections = 1
+                    RETURN r.name as name, r.department as department
+                    LIMIT 10
+                """)
 
                 single_connected = list(result)
                 if single_connected:
@@ -917,8 +1026,21 @@ class AdminCLI:
                     headers = ['#', 'Researcher', 'Department']
                     print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
-                result = session.run(
-)
+                # Departments with low collaboration
+                result = session.run("""
+                    MATCH (r:Researcher)
+                    WHERE r.department IS NOT NULL
+                    WITH r.department as department, collect(r) as researchers
+                    UNWIND researchers as researcher
+                    OPTIONAL MATCH (researcher)-[rel]-()
+                    WITH department, 
+                         size(researchers) as total_researchers,
+                         count(DISTINCT rel) as total_connections
+                    RETURN department, total_researchers, total_connections,
+                           toFloat(total_connections) / total_researchers as connections_per_researcher
+                    ORDER BY connections_per_researcher ASC
+                    LIMIT 10
+                """)
 
                 print(f"\n{Fore.YELLOW}DEPARTMENTS WITH LOW COLLABORATION:")
 
@@ -939,11 +1061,13 @@ class AdminCLI:
             print(f"{Fore.RED}Error: {e}")
 
     def analyze_network_growth(self):
+        """Analyze network growth over time"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}NETWORK GROWTH ANALYSIS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
         try:
+            # Get researcher growth by month
             pipeline = [
                 {
                     "$project": {
@@ -974,6 +1098,7 @@ class AdminCLI:
 
             print(f"\n{Fore.WHITE}Total new researchers in period: {total_researchers}")
 
+            # Project growth
             pipeline = [
                 {
                     "$project": {
@@ -1004,6 +1129,7 @@ class AdminCLI:
 
             print(f"\n{Fore.WHITE}Total new projects in period: {total_projects}")
 
+            # Calculate growth rate
             if len(growth) > 1:
                 first_month = growth[0]['count']
                 last_month = growth[-1]['count']
@@ -1019,7 +1145,10 @@ class AdminCLI:
         except Exception as e:
             print(f"{Fore.RED}Error: {e}")
 
+    # === Existing methods from original admin_cli.py ===
+
     def manage_researchers(self):
+        """Manage researchers"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 50}")
             print(f"{Fore.YELLOW}MANAGE RESEARCHERS")
@@ -1053,6 +1182,7 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def view_all_researchers(self):
+        """View all researchers"""
         researchers = list(mongodb.db.researchers.find(
             {'profile_status': {'$ne': 'deleted'}},
             {'name': 1, 'email': 1, 'department': 1, 'profile_status': 1, 'role': 1}
@@ -1079,6 +1209,7 @@ class AdminCLI:
         print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
     def view_pending_researchers(self):
+        """View pending researchers"""
         researchers = list(mongodb.db.researchers.find(
             {'profile_status': 'pending'},
             {'name': 1, 'email': 1, 'department': 1, 'research_interests': 1, 'created_at': 1}
@@ -1113,6 +1244,7 @@ class AdminCLI:
         print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
     def approve_researcher(self):
+        """Approve a researcher"""
         researchers = list(mongodb.db.researchers.find(
             {'profile_status': 'pending'},
             {'name': 1, 'email': 1, '_id': 1}
@@ -1156,6 +1288,7 @@ class AdminCLI:
             print(f"{Fore.RED}ERROR: Please enter a valid number")
 
     def reject_researcher(self):
+        """Reject a researcher"""
         researchers = list(mongodb.db.researchers.find(
             {'profile_status': 'pending'},
             {'name': 1, 'email': 1, '_id': 1}
@@ -1199,10 +1332,12 @@ class AdminCLI:
             print(f"{Fore.RED}ERROR: Please enter a valid number")
 
     def delete_researcher_safe(self):
+        """Delete researcher using the safe function"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}DELETE RESEARCHER (SAFE MODE)")
         print(f"{Fore.CYAN}{'=' * 50}")
 
+        # خيارات البحث
         print(f"\n{Fore.GREEN}How do you want to find the researcher?")
         print(f"{Fore.GREEN}[1]{Fore.WHITE} Search by email")
         print(f"{Fore.GREEN}[2]{Fore.WHITE} Search by name")
@@ -1213,13 +1348,16 @@ class AdminCLI:
         researcher_identifier = None
 
         if choice == '1':
+            # البحث بالإيميل
             email = input(f"{Fore.WHITE}Enter researcher email: ").strip()
             if email:
                 researcher_identifier = email
 
         elif choice == '2':
+            # البحث بالاسم
             name = input(f"{Fore.WHITE}Enter researcher name (or part of it): ").strip()
             if name:
+                # البحث في MongoDB
                 researchers = list(mongodb.db.researchers.find(
                     {
                         'name': {'$regex': f'.*{name}.*', '$options': 'i'},
@@ -1248,6 +1386,7 @@ class AdminCLI:
                     return
 
         elif choice == '3':
+            # عرض جميع الباحثين
             researchers = list(mongodb.db.researchers.find(
                 {'profile_status': {'$ne': 'deleted'}},
                 {'name': 1, 'email': 1, '_id': 1}
@@ -1280,6 +1419,7 @@ class AdminCLI:
             print(f"{Fore.RED}No researcher selected")
             return
 
+        # التأكيد النهائي
         confirm = input(
             f"\n{Fore.RED}⚠️ ARE YOU SURE YOU WANT TO DELETE THIS RESEARCHER? (type 'DELETE' to confirm): ").strip()
 
@@ -1287,6 +1427,7 @@ class AdminCLI:
             print(f"{Fore.YELLOW}❌ Deletion cancelled")
             return
 
+        # استخدام الدالة الآمنة للحذف
         success, message = ResearcherService.delete_researcher_safe(researcher_identifier, self.current_user['_id'])
 
         if success:
@@ -1297,6 +1438,7 @@ class AdminCLI:
         input(f"\n{Fore.CYAN}Press Enter to continue...")
 
     def search_researchers_admin(self):
+        """Search researchers for admin"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}SEARCH RESEARCHERS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -1374,6 +1516,7 @@ class AdminCLI:
                 print(f"{Fore.GREEN if success else Fore.RED}{msg}")
 
     def view_researcher_details(self, researcher_id: str):
+        """View detailed researcher information"""
         researcher = mongodb.get_researcher(researcher_id)
 
         if not researcher:
@@ -1405,10 +1548,12 @@ class AdminCLI:
         print(f"  Last Login: {researcher.get('last_login', 'N/A')}")
         print(f"  Login Count: {researcher.get('login_count', 0)}")
 
+        # Get projects count
         projects_count = mongodb.db.projects.count_documents({
             'participants': researcher_id
         })
 
+        # Get publications count
         publications_count = mongodb.db.publications.count_documents({
             'authors.researcher_id': researcher_id
         })
@@ -1420,6 +1565,7 @@ class AdminCLI:
         input(f"\n{Fore.CYAN}Press Enter to continue...")
 
     def manage_projects(self):
+        """Manage projects"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 50}")
             print(f"{Fore.YELLOW}MANAGE PROJECTS")
@@ -1444,6 +1590,7 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def view_all_projects(self):
+        """View all projects"""
         projects = list(mongodb.db.projects.find(
             {},
             {'title': 1, 'creator_name': 1, 'status': 1, 'research_area': 1, 'created_at': 1}
@@ -1473,6 +1620,7 @@ class AdminCLI:
         print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
     def view_project_details_admin(self):
+        """View project details"""
         project_id = input(f"{Fore.WHITE}Enter project ID: ").strip()
 
         if not project_id:
@@ -1502,6 +1650,7 @@ class AdminCLI:
                 print(f"{Fore.WHITE}  • {participant.get('name', 'Unknown')}")
 
     def delete_project_admin(self):
+        """Delete project as admin"""
         project_id = input(f"{Fore.WHITE}Enter project ID to delete: ").strip()
 
         if not project_id:
@@ -1529,6 +1678,7 @@ class AdminCLI:
             print(f"{Fore.RED}ERROR: {message}")
 
     def manage_publications(self):
+        """Manage publications"""
         while True:
             print(f"\n{Fore.CYAN}{'=' * 50}")
             print(f"{Fore.YELLOW}MANAGE PUBLICATIONS")
@@ -1553,6 +1703,7 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: Invalid choice")
 
     def view_all_publications(self):
+        """View all publications"""
         publications = list(mongodb.db.publications.find(
             {},
             {'title': 1, 'year': 1, 'journal': 1, 'citation_count': 1}
@@ -1578,6 +1729,7 @@ class AdminCLI:
         print(tabulate(table_data, headers=headers, tablefmt='simple_grid'))
 
     def view_publication_details_admin(self):
+        """View publication details"""
         publication_id = input(f"{Fore.WHITE}Enter publication ID: ").strip()
 
         if not publication_id:
@@ -1605,6 +1757,7 @@ class AdminCLI:
                 print(f"{Fore.WHITE}  • {author.get('name', 'Unknown')}")
 
     def delete_publication_admin(self):
+        """Delete publication as admin"""
         publication_id = input(f"{Fore.WHITE}Enter publication ID to delete: ").strip()
 
         if not publication_id:
@@ -1633,10 +1786,12 @@ class AdminCLI:
             print(f"{Fore.RED}ERROR: {message}")
 
     def view_system_statistics(self):
+        """View system statistics"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}SYSTEM STATISTICS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
+        # Count documents
         researchers_count = mongodb.db.researchers.count_documents({'profile_status': {'$ne': 'deleted'}})
         projects_count = mongodb.db.projects.count_documents({})
         publications_count = mongodb.db.publications.count_documents({})
@@ -1648,6 +1803,7 @@ class AdminCLI:
         print(f"  Total Publications: {publications_count}")
         print(f"  Administrators: {admins_count}")
 
+        # Neo4j statistics
         if neo4j and hasattr(neo4j, 'driver') and neo4j.driver:
             try:
                 with neo4j.driver.session() as session:
@@ -1663,6 +1819,7 @@ class AdminCLI:
             except Exception as e:
                 print(f"\n{Fore.YELLOW}Neo4j Statistics: Error - {e}")
 
+        # Redis statistics
         if redis_manager and redis_manager.is_connected():
             try:
                 keys = redis_manager.client.keys("*")
@@ -1672,6 +1829,7 @@ class AdminCLI:
                 pass
 
     def view_all_relationships(self):
+        """View all relationships"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}ALL RELATIONSHIPS")
         print(f"{Fore.CYAN}{'=' * 50}")
@@ -1686,6 +1844,7 @@ class AdminCLI:
 
             print(f"\n{Fore.GREEN}Total Relationships: {len(relationships)}")
 
+            # Group by relationship type
             type_counts = {}
             for rel in relationships:
                 rel_type = rel.get('relationship_type', 'Unknown')
@@ -1695,6 +1854,7 @@ class AdminCLI:
             for rel_type, count in sorted(type_counts.items()):
                 print(f"{Fore.WHITE}  {rel_type}: {count}")
 
+            # Show sample relationships
             print(f"\n{Fore.GREEN}Sample Relationships (first 10):")
             for i, rel in enumerate(relationships[:10], 1):
                 if 'researcher1_name' in rel and 'researcher2_name' in rel:
@@ -1708,6 +1868,7 @@ class AdminCLI:
             print(f"{Fore.RED}Error loading relationships: {e}")
 
     def view_top_collaborative_pairs(self):
+        """View Top 5 Collaborative Pairs in Admin Dashboard"""
         print(f"\n{Fore.CYAN}{'=' * 60}")
         print(f"{Fore.YELLOW}TOP 5 COLLABORATIVE PAIRS - ADMIN VIEW")
         print(f"{Fore.CYAN}{'=' * 60}")
@@ -1718,6 +1879,7 @@ class AdminCLI:
 
             print(f"{Fore.YELLOW}Fetching collaboration data from Neo4j...")
 
+            # الحصول على أفضل 5 أزواج من Neo4j
             pairs = CollaborationService.get_most_collaborative_pairs(5)
 
             if not pairs:
@@ -1762,6 +1924,7 @@ class AdminCLI:
                 print(f"{Fore.WHITE}Average collaborations per pair: {avg_collaborations:.1f}")
                 print(f"{Fore.WHITE}Average publications per pair: {avg_publications:.1f}")
 
+            # عرض الأزواج الأكثر نشاطاً في المشاريع
             print(f"\n{Fore.CYAN}{'-' * 60}")
             print(f"{Fore.YELLOW}TOP 5 ACTIVE TEAMWORK PAIRS")
             print(f"{Fore.CYAN}{'-' * 60}")
@@ -1814,6 +1977,7 @@ class AdminCLI:
             print(f"{Fore.WHITE}• Cached in Redis for performance")
             print(f"{Fore.CYAN}{'=' * 60}")
 
+            # خيارات إضافية للمسؤول
             print(f"\n{Fore.YELLOW}ADMIN ACTIONS:")
             print(f"{Fore.GREEN}[1]{Fore.WHITE} Refresh cache")
             print(f"{Fore.GREEN}[2]{Fore.WHITE} View raw data")
@@ -1823,6 +1987,7 @@ class AdminCLI:
             action = input(f"\n{Fore.YELLOW}Select action: ").strip()
 
             if action == '1':
+                # تحديث الكاش
                 if redis_manager.is_connected():
                     redis_manager.cache_delete_pattern("collaboration_pairs:*")
                     redis_manager.cache_delete_pattern("active_teams:*")
@@ -1831,6 +1996,7 @@ class AdminCLI:
                     print(f"{Fore.YELLOW}Redis cache is not connected")
 
             elif action == '2':
+                # عرض البيانات الخام
                 print(f"\n{Fore.CYAN}RAW PAIRS DATA:")
                 for i, pair in enumerate(pairs, 1):
                     print(f"\n{Fore.GREEN}Pair #{i}:")
@@ -1844,6 +2010,7 @@ class AdminCLI:
                     print(f"  Relationship Type: {pair.get('relationship_type')}")
 
             elif action == '3':
+                # تصدير إلى ملف
                 import json
                 from datetime import datetime
 
@@ -1867,10 +2034,12 @@ class AdminCLI:
             print(f"{Fore.RED}Error showing top collaborative pairs: {e}")
 
     def database_status(self):
+        """Check database status"""
         print(f"\n{Fore.CYAN}{'=' * 50}")
         print(f"{Fore.YELLOW}DATABASE STATUS")
         print(f"{Fore.CYAN}{'=' * 50}")
 
+        # MongoDB
         try:
             mongodb.client.admin.command('ping')
             print(f"\n{Fore.GREEN}MongoDB: ✓ Connected")
@@ -1880,6 +2049,7 @@ class AdminCLI:
         except Exception as e:
             print(f"\n{Fore.RED}MongoDB: ✗ Error: {e}")
 
+        # Neo4j
         if neo4j and hasattr(neo4j, 'driver'):
             try:
                 with neo4j.driver.session() as session:
@@ -1890,6 +2060,7 @@ class AdminCLI:
         else:
             print(f"\n{Fore.YELLOW}Neo4j: ⚠ Not initialized")
 
+        # Redis
         if redis_manager and redis_manager.is_connected():
             print(f"\n{Fore.GREEN}Redis: ✓ Connected")
             try:
@@ -1903,6 +2074,7 @@ class AdminCLI:
             print(f"\n{Fore.YELLOW}Redis: ⚠ Disabled or not connected")
 
     def run(self):
+        """Run admin interface with advanced analytics"""
         if not self.login():
             return
 
@@ -1947,14 +2119,18 @@ class AdminCLI:
                 print(f"{Fore.RED}ERROR: {e}")
 
     def logout(self):
+        """Logout admin"""
         self.current_session = None
         self.current_user = None
         print(f"\n{Fore.GREEN}SUCCESS: Logged out successfully")
 
+
 @click.command()
 def main():
+    """Admin Interface with Advanced Analytics"""
     cli = AdminCLI()
     cli.run()
+
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,7 @@ from app.database.redis import redis_manager
 from app.models.publication import Publication, Author
 from app.models.collaboration import CollaborationType
 
+
 class PublicationService:
     @staticmethod
     def create_publication(creator_id: str, publication_data: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
@@ -113,8 +114,10 @@ class PublicationService:
                         author_order = author.get('order', 1)
 
                         with neo4j.driver.session() as session:
-                            result = session.run(
-, researcher_id=researcher_id, publication_id=publication_id)
+                            result = session.run("""
+                                MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                                RETURN rel.author_order as neo4j_order
+                            """, researcher_id=researcher_id, publication_id=publication_id)
 
                             record = result.single()
                             if record and record['neo4j_order']:
@@ -143,8 +146,11 @@ class PublicationService:
 
         coauthors_info = []
         with neo4j.driver.session() as session:
-            result = session.run(
-, publication_id=publication_id)
+            result = session.run("""
+                MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                WHERE $publication_id IN rel.publications
+                RETURN r1.id as researcher1_id, r2.id as researcher2_id, rel.collaboration_count as collaboration_count
+            """, publication_id=publication_id)
 
             for record in result:
                 coauthors_info.append({
@@ -155,8 +161,10 @@ class PublicationService:
 
         produced_by = []
         with neo4j.driver.session() as session:
-            result = session.run(
-, publication_id=publication_id)
+            result = session.run("""
+                MATCH (p:Project)-[rel:PRODUCED]->(pub:Publication {id: $publication_id})
+                RETURN p.id as project_id
+            """, publication_id=publication_id)
 
             for record in result:
                 produced_by.append(record['project_id'])
@@ -195,8 +203,10 @@ class PublicationService:
                     break
 
             with neo4j.driver.session() as session:
-                result = session.run(
-, researcher_id=researcher_id, publication_id=str(pub['_id']))
+                result = session.run("""
+                    MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                    RETURN rel.author_order as neo4j_order
+                """, researcher_id=researcher_id, publication_id=str(pub['_id']))
 
                 record = result.single()
                 if record and record['neo4j_order']:
@@ -256,8 +266,11 @@ class PublicationService:
     def get_researcher_authored_publications(researcher_id: str) -> List[Dict[str, Any]]:
         try:
             with neo4j.driver.session() as session:
-                result = session.run(
-, researcher_id=researcher_id)
+                result = session.run("""
+                    MATCH (r:Researcher {id: $researcher_id})-[rel:AUTHORED]->(pub:Publication)
+                    RETURN pub.id as publication_id, rel.author_order as author_order
+                    ORDER BY rel.author_order
+                """, researcher_id=researcher_id)
 
                 publication_ids = []
                 for record in result:
@@ -313,22 +326,34 @@ class PublicationService:
             if not publication_data:
                 return False, "Publication not found"
 
+            # 1. Delete from Neo4j
             with neo4j.driver.session() as session:
-                session.run(
-, publication_id=publication_id)
+                session.run("""
+                    MATCH ()-[rel:AUTHORED]->(pub:Publication {id: $publication_id})
+                    DELETE rel
+                """, publication_id=publication_id)
 
-                session.run(
-, publication_id=publication_id)
+                session.run("""
+                    MATCH ()-[rel:PRODUCED]->(pub:Publication {id: $publication_id})
+                    DELETE rel
+                """, publication_id=publication_id)
 
-                session.run(
-, publication_id=publication_id)
+                session.run("""
+                    MATCH (r1:Researcher)-[rel:CO_AUTHORED_WITH]-(r2:Researcher)
+                    WHERE $publication_id IN rel.publications
+                    SET rel.publications = [pub_id IN rel.publications WHERE pub_id <> $publication_id]
+                """, publication_id=publication_id)
 
-                session.run(
-, publication_id=publication_id)
+                session.run("""
+                    MATCH (pub:Publication {id: $publication_id})
+                    DELETE pub
+                """, publication_id=publication_id)
 
+            # 2. Delete from MongoDB
             result = mongodb.db.publications.delete_one({'_id': ObjectId(publication_id)})
 
             if result.deleted_count > 0:
+                # 3. Remove from researchers
                 for author in publication_data.get('authors', []):
                     if isinstance(author, dict):
                         researcher_id = author.get('researcher_id')
